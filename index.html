@@ -745,75 +745,118 @@ function buildActa() {
 // ── MARCADOR EN VIVO ──────────────────────────────────────────────
 function buildMarcador() {
   var wip = loadWip();
-  var wipOk = wip && wip.localId && wip.visitanteId;
-  var ultimo = wipOk
-    ? {local_id:wip.localId, visitante_id:wip.visitanteId,
-       goles_local:(wip.goles||[]).filter(function(g){return g.equipo==='local';}).length,
-       goles_visitante:(wip.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
-       goles:wip.goles||[], expulsiones:wip.expulsiones||[], cambios:wip.cambios||[],
-       fecha:wip.fecha, jornada:wip.jornada||'?', liga_id:wip.ligaId}
-    : DB.partidos.filter(function(p){return p.completado;}).sort(function(a,b){
-        return new Date(b.created_at||0)-new Date(a.created_at||0);
-      })[0] || null;
+  var wipOk = !!(wip && wip.localId && wip.visitanteId);
+  var ultimo;
+  if(wipOk) {
+    ultimo = {
+      local_id: wip.localId,
+      visitante_id: wip.visitanteId,
+      goles_local: (wip.goles||[]).filter(function(g){return g.equipo==='local';}).length,
+      goles_visitante: (wip.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
+      goles: wip.goles||[],
+      fecha: wip.fecha,
+      jornada: wip.jornada||'?',
+      liga_id: wip.ligaId
+    };
+  } else {
+    var completados = DB.partidos.filter(function(p){return p.completado;});
+    completados.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
+    ultimo = completados[0]||null;
+  }
 
   var s = CRON;
-  var minP = s.parte===1?s.min:15+s.min;
-  var cronColor = s.alerta?'#ff3d57':s.run?'#00e676':'#6b7a99';
+  var minP = s.parte===1 ? s.min : 15+s.min;
+  var cronColor = s.alerta ? '#ff3d57' : (s.run ? '#00e676' : '#6b7a99');
 
-  var cronBtns = '';
-  if(!s.run&&!s.fin) cronBtns+='<button class="btn btn-green" id="cron-iniciar">'+(s.parte===1&&s.min===0?'Iniciar':'Reanudar')+'</button>';
-  if(s.run)  cronBtns+='<button class="btn btn-yellow" id="cron-pausar">Pausar</button>';
-  if(s.alerta&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">2a parte</button>';
-  if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">Fin</button>';
-  if(s.fin)  cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
+  var bc = '<div class="breadcrumb">' +
+    '<span class="breadcrumb-link" id="bc-home">Inicio</span>' +
+    '<span class="breadcrumb-sep">›</span>' +
+    '<span class="breadcrumb-current">Marcador</span></div>';
 
-  var bcHtml = '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span>' +
-    '<span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div>';
+  if(!ultimo) {
+    return bc + '<div style="text-align:center;padding:60px">' +
+      '<div style="font-size:56px;margin-bottom:14px">📺</div>' +
+      '<h2 class="h2">Marcador en directo</h2>' +
+      '<p style="color:#6b7a99;margin-top:8px">Aparecera aqui cuando empieces un acta.</p></div>';
+  }
 
-  if(!ultimo) return bcHtml +
-    '<div style="text-align:center;padding:60px">' +
-    '<div style="font-size:56px;margin-bottom:14px">📺</div>' +
-    '<h2 class="h2">Marcador en directo</h2>' +
-    '<p style="color:#6b7a99;margin-top:8px">Aparecera aqui cuando empieces un acta.</p></div>';
-
-  var nL = nEq(ultimo.local_id), nV = nEq(ultimo.visitante_id);
+  var nL = nEq(ultimo.local_id);
+  var nV = nEq(ultimo.visitante_id);
   var liga = ultimo.liga_id ? getLiga(ultimo.liga_id) : null;
-  var goles = (ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
+  var goles = (ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto - +b.minuto;});
 
-  var golesHtml = goles.map(function(g){
-    return '<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:#1a2438;margin-bottom:6px">' +
-      '<div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#00e676;min-width:40px">'+pad(g.minuto)+"'</div>" +
-      '<div style="flex:1"><div style="font-weight:700">'+g.autor+'</div>' +
-      '<div style="color:#6b7a99;font-size:12px">'+(g.equipo==='local'?nL:nV)+'</div></div>' +
-      '<span class="badge" style="background:rgba('+(g.equipo==='local'?'0,230,118':'255,214,0')+',0.15);color:'+(g.equipo==='local'?'#00e676':'#ffd600')+'">'+(g.equipo==='local'?nL:nV)+'</span>' +
-      '</div>';
-  }).join('');
+  // Cronometro botones
+  var cronBtns = '';
+  if(!s.run && !s.fin) cronBtns += '<button class="btn btn-green" id="cron-iniciar">' + (s.parte===1&&s.min===0?'Iniciar':'Reanudar') + '</button>';
+  if(s.run)  cronBtns += '<button class="btn btn-yellow" id="cron-pausar">Pausar</button>';
+  if(s.alerta && s.parte===1 && !s.fin) cronBtns += '<button class="btn btn-blue" id="cron-sig2">2a parte</button>';
+  if(s.alerta && s.parte===2 && !s.fin) cronBtns += '<button class="btn btn-red" id="cron-fin">Fin</button>';
+  if(s.fin)  cronBtns += '<button class="btn btn-ghost" id="cron-reset">Reset</button>';
 
-  return bcHtml + '<div style="display:flex;flex-direction:column;gap:14px">' +
-    '<div style="background:#000;border:2px solid rgba(0,230,118,0.2);border-radius:16px;padding:20px 18px">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">' +
-    '<div>' +
-    '<div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(s.min)+':'+pad(s.sec)+'</div>' +
-    '<div id="crono-status" style="color:#6b7a99;font-size:12px;margin-top:3px">'+(s.fin?'FIN DEL PARTIDO':s.alerta?'Fin parte '+s.parte:s.run?'Parte '+s.parte+' min '+minP:'Parte '+s.parte+' pausado')+'</div>' +
-    '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+cronBtns+'</div>' +
-    (!s.fin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">+min extra:</span>' +
-    '<input type="number" id="cron-extra" min="0" max="10" value="'+s.extra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"/></div>':'') +
-    '</div></div>' +
-    '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center">' +
-    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div>' +
-    '<div style="font-family:Oswald,sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div>' +
-    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div>' +
-    '</div>' +
-    '<div style="text-align:center;color:#6b7a99;font-size:12px;margin-top:8px">' +
-    (liga?'<span class="badge" style="background:rgba(0,230,118,0.1);color:#00e676;margin-right:8px">'+liga.nombre+'</span>':'') +
-    'Jornada '+ultimo.jornada+(ultimo.fecha?' · '+ultimo.fecha:'') +
-    (wipOk?' · <span class="badge" style="background:rgba(255,214,0,0.15);color:#ffd600">En curso</span>':'') +
-    '</div>' +
-    '</div>' +
-    (goles.length?'<div class="card"><p class="section-title">Goles</p>'+golesHtml+'</div>':'') +
-    '</div>';
+  var extraInput = !s.fin
+    ? '<div style="display:flex;align-items:center;gap:6px">' +
+      '<span style="color:#6b7a99;font-size:11px">+min extra:</span>' +
+      '<input type="number" id="cron-extra" min="0" max="10" value="' + s.extra + '" class="inp" style="width:42px;text-align:center;padding:5px 6px"/>' +
+      '</div>'
+    : '';
+
+  var cronStatus = s.fin ? 'FIN DEL PARTIDO'
+    : s.alerta ? ('Fin parte ' + s.parte)
+    : s.run ? ('Parte ' + s.parte + ' min ' + minP)
+    : ('Parte ' + s.parte + ' pausado');
+
+  // Goles
+  var golesHtml = '';
+  goles.forEach(function(g) {
+    var esLocal = g.equipo === 'local';
+    var eqNombre = esLocal ? nL : nV;
+    var color = esLocal ? '#00e676' : '#ffd600';
+    var rgba = esLocal ? '0,230,118' : '255,214,0';
+    golesHtml += '<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:#1a2438;margin-bottom:6px">';
+    golesHtml += '<div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#00e676;min-width:40px">' + pad(g.minuto) + "'</div>";
+    golesHtml += '<div style="flex:1"><div style="font-weight:700">' + g.autor + '</div>';
+    golesHtml += '<div style="color:#6b7a99;font-size:12px">' + eqNombre + '</div></div>';
+    golesHtml += '<span class="badge" style="background:rgba(' + rgba + ',0.15);color:' + color + '">' + eqNombre + '</span>';
+    golesHtml += '</div>';
+  });
+
+  var ligaBadge = liga
+    ? '<span class="badge" style="background:rgba(0,230,118,0.1);color:#00e676;margin-right:8px">' + liga.nombre + '</span>'
+    : '';
+  var wipBadge = wipOk
+    ? '<span class="badge" style="background:rgba(255,214,0,0.15);color:#ffd600">En curso</span>'
+    : '';
+
+  var html = bc + '<div style="display:flex;flex-direction:column;gap:14px">';
+
+  // Panel estadio
+  html += '<div style="background:#000;border:2px solid rgba(0,230,118,0.2);border-radius:16px;padding:20px 18px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">';
+  html += '<div>';
+  html += '<div id="crono-display" class="crono-display" style="color:' + cronColor + '">' + pad(s.min) + ':' + pad(s.sec) + '</div>';
+  html += '<div id="crono-status" style="color:#6b7a99;font-size:12px;margin-top:3px">' + cronStatus + '</div>';
+  html += '</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">';
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' + cronBtns + '</div>';
+  html += extraInput;
+  html += '</div></div>';
+
+  // Marcador
+  html += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center">';
+  html += '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">' + nL + '</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div>';
+  html += '<div style="font-family:Oswald,sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">' + ultimo.goles_local + ' - ' + ultimo.goles_visitante + '</div>';
+  html += '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">' + nV + '</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div>';
+  html += '</div>';
+  html += '<div style="text-align:center;color:#6b7a99;font-size:12px;margin-top:8px">' + ligaBadge + 'Jornada ' + ultimo.jornada + (ultimo.fecha ? ' · ' + ultimo.fecha : '') + ' ' + wipBadge + '</div>';
+  html += '</div>';
+
+  // Goles
+  if(goles.length) {
+    html += '<div class="card"><p class="section-title">Goles</p>' + golesHtml + '</div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function attachMarcadorEvents(){
