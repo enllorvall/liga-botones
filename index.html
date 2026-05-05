@@ -442,7 +442,7 @@ function buildModal(){
     '<button class="btn btn-ghost" id="btn-modal-close">&#x2715;</button>' +
     '</div></div>' +
     marcador +
-    '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">&#128197; '+p.fecha+'+(p.arbitro?' &nbsp;&middot;&nbsp; &#129494; '+p.arbitro:'')+'</p>' +
+    '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">&#128197; '+p.fecha+(p.arbitro?' &middot; '+p.arbitro:'')+'</p>' +
     '<p class="section-title">&#9917; Goles</p>' + (!gs.length?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">&mdash;</p>':'') + evRow(gs,'0,230,118',ed) + formGol +
     '<p class="section-title" style="margin-top:12px">&#128999; Faltas</p>' + (!fs.length?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">&mdash;</p>':'') + evRow(fs,'255,234,0',ed) + formFalta +
     '<p class="section-title" style="margin-top:12px">&#128680; Expulsiones</p>' + (!xs.length?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">&mdash;</p>':'') + evRow(xs,'255,61,87',ed) + formExp +
@@ -636,7 +636,9 @@ function buildActa(){
     (!s.cronFin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">Minutos extra:</span><input type="number" id="cron-extra" min="0" max="10" value="'+s.cronExtra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"></div>':'') +
     '</div></div></div>' +
 
-    '<div class="card"><p class="section-title">&#129348; &Aacute;rbitro, Porteros y paradas</p><div style="margin-bottom:12px"><label class="label">&#193;rbitro</label><input type="text" id="w-arbitro" placeholder="Nombre" class="inp"/></div><div class="grid2">' +
+    '<div class="card"><p class="section-title">&#129348; Porteros y paradas</p>' + 
+    '<div style="margin-bottom:12px;margin-bottom:12px"><label class="label">Arbitro</label><input type="text" id="w-arbitro" placeholder="Nombre del arbitro" class="inp"/></div>' + 
+    '<div class="grid2">' +
     '<div><label class="label">Portero &mdash; '+nL+'</label><input type="text" id="w-porteroL" value="'+w.porteroL+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
     '<div class="counter"><span style="color:#6b7a99;font-size:13px;min-width:55px">Paradas</span><button class="counter-btn" id="pL-dec">&#8722;</button><span class="counter-val" id="pL-val" style="color:#4fc3f7">'+w.paradasL+'</span><button class="counter-btn" id="pL-inc">+</button></div></div>' +
     '<div><label class="label">Portero &mdash; '+nV+'</label><input type="text" id="w-porteroV" value="'+w.porteroV+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
