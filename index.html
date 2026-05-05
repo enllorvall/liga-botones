@@ -324,7 +324,7 @@ function buildPartidos(){
       '<div style="display:flex;gap:6px;align-items:center">' +
       '<span class="badge" style="background:rgba(255,214,0,0.15);color:#ffd600">&#9998; Editar</span>' +
       '<span class="badge" style="background:rgba(79,195,247,0.15);color:#4fc3f7">&#128424; PDF</span>' +
-      '<button class="btn btn-red del-partido" data-pid="'+p.id+'" style="padding:3px 10px;font-size:12px" onclick="event.stopPropagation()">&#128465;</button>' +
+      '<button class="btn btn-red del-partido" data-pid="'+p.id+'" style="padding:3px 10px;font-size:12px">&#128465;</button>' +
       '</div></div>' +
       '<div style="display:flex;align-items:center;justify-content:center;gap:16px">' +
       '<span style="font-family:\'Oswald\',sans-serif;font-size:18px;font-weight:700">'+nE(p.local_id)+'</span>' +
@@ -346,7 +346,8 @@ function attachPartidosEvents(){
   });
 
   document.querySelectorAll('.partido-card').forEach(function(card){
-    card.addEventListener('click', function(){
+    card.addEventListener('click', function(e){
+      if(e.target.classList.contains('del-partido')) return;
       var pid = this.dataset.pid;
       var p = STATE.partidos.find(function(x){return x.id===pid;});
       if(p){ abrirModal(p); }
@@ -635,7 +636,7 @@ function buildActa(){
     (!s.cronFin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">Minutos extra:</span><input type="number" id="cron-extra" min="0" max="10" value="'+s.cronExtra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"></div>':'') +
     '</div></div></div>' +
 
-    '<div class="card"><p class="section-title">&#129348; &Aacute;rbitro, Porteros y paradas</p><div style="margin-bottom:12px"><label class="label">Árbitro</label><input type="text" id="w-arbitro" placeholder="Nombre del árbitro" class="inp"/></div><div class="grid2">' +
+    '<div class="card"><p class="section-title">&#129348; &Aacute;rbitro, Porteros y paradas</p><div style="margin-bottom:12px"><label class="label">&#193;rbitro</label><input type="text" id="w-arbitro" value="'+( w.arbitro||'')+'" placeholder="Nombre" class="inp"/></div><div class="grid2">' +
     '<div><label class="label">Portero &mdash; '+nL+'</label><input type="text" id="w-porteroL" value="'+w.porteroL+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
     '<div class="counter"><span style="color:#6b7a99;font-size:13px;min-width:55px">Paradas</span><button class="counter-btn" id="pL-dec">&#8722;</button><span class="counter-val" id="pL-val" style="color:#4fc3f7">'+w.paradasL+'</span><button class="counter-btn" id="pL-inc">+</button></div></div>' +
     '<div><label class="label">Portero &mdash; '+nV+'</label><input type="text" id="w-porteroV" value="'+w.porteroV+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
