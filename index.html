@@ -74,6 +74,26 @@ select option{background:#1a2438}
 <div id="pdf-area"></div>
 <script>
 'use strict';
+
+// ── CALENDARIO PREDEFINIDO (Liga actual) ──────────────────────────
+var CAL_EQUIPOS = ["Valencia CF","Villarreal","Lograones","Levante UD","Milan AC","Atletico de Madrid","Racing de Santander"];
+var CAL_JORNADAS = [
+  {n:1,descansa:"Racing de Santander",partidos:[["Valencia CF","Villarreal"],["Lograones","Levante UD"],["Milan AC","Atletico de Madrid"]]},
+  {n:2,descansa:"Valencia CF",partidos:[["Racing de Santander","Lograones"],["Villarreal","Milan AC"],["Levante UD","Atletico de Madrid"]]},
+  {n:3,descansa:"Milan AC",partidos:[["Valencia CF","Levante UD"],["Lograones","Villarreal"],["Racing de Santander","Atletico de Madrid"]]},
+  {n:4,descansa:"Levante UD",partidos:[["Valencia CF","Atletico de Madrid"],["Lograones","Milan AC"],["Villarreal","Racing de Santander"]]},
+  {n:5,descansa:"Atletico de Madrid",partidos:[["Valencia CF","Lograones"],["Levante UD","Villarreal"],["Milan AC","Racing de Santander"]]},
+  {n:6,descansa:"Villarreal",partidos:[["Valencia CF","Racing de Santander"],["Lograones","Atletico de Madrid"],["Milan AC","Levante UD"]]},
+  {n:7,descansa:"Lograones",partidos:[["Valencia CF","Milan AC"],["Atletico de Madrid","Villarreal"],["Racing de Santander","Levante UD"]]},
+  {n:8,descansa:"Racing de Santander",partidos:[["Villarreal","Valencia CF"],["Levante UD","Lograones"],["Atletico de Madrid","Milan AC"]]},
+  {n:9,descansa:"Valencia CF",partidos:[["Lograones","Racing de Santander"],["Milan AC","Villarreal"],["Atletico de Madrid","Levante UD"]]},
+  {n:10,descansa:"Milan AC",partidos:[["Levante UD","Valencia CF"],["Villarreal","Lograones"],["Atletico de Madrid","Racing de Santander"]]},
+  {n:11,descansa:"Levante UD",partidos:[["Atletico de Madrid","Valencia CF"],["Milan AC","Lograones"],["Racing de Santander","Villarreal"]]},
+  {n:12,descansa:"Atletico de Madrid",partidos:[["Lograones","Valencia CF"],["Villarreal","Levante UD"],["Racing de Santander","Milan AC"]]},
+  {n:13,descansa:"Villarreal",partidos:[["Racing de Santander","Valencia CF"],["Atletico de Madrid","Lograones"],["Levante UD","Milan AC"]]},
+  {n:14,descansa:"Lograones",partidos:[["Milan AC","Valencia CF"],["Villarreal","Atletico de Madrid"],["Levante UD","Racing de Santander"]]}
+];
+
 var SB_URL = "https://iifxqedvwvxetntpjjjd.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZnhxZWR2d3Z4ZXRudHBqampkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Mzk0MjEsImV4cCI6MjA5MzQxNTQyMX0.ex8n_fjO3LruVO6NgGYHie-OjStlW-uZK6-Urj25aM0";
 var CONFIGURED = SB_URL.indexOf("PEGA_AQUI") === -1;
@@ -197,13 +217,14 @@ function buildPage() {
     '<span style="color:#6b7a99;font-size:12px">Conectado</span></div></div>';
 
   var content = '';
-  if(s.screen === 'home')      content = buildHome();
-  else if(s.screen === 'liga') content = buildLiga();
+  if(s.screen === 'home')        content = buildHome();
+  else if(s.screen === 'liga')   content = buildLiga();
   else if(s.screen === 'torneo') content = buildTorneo();
   else if(s.screen === 'jornada') content = buildJornada();
-  else if(s.screen === 'acta') content = buildActa();
+  else if(s.screen === 'acta')   content = buildActa();
+  else if(s.screen === 'marcador') content = buildMarcador();
   else if(s.screen === 'equipos') content = buildEquipos();
-  else if(s.screen === 'stats') content = buildStats();
+  else if(s.screen === 'stats')  content = buildStats();
 
   var modal = '';
   if(MODAL.type === 'partido') modal = buildModalPartido();
@@ -220,7 +241,9 @@ function buildHome() {
     ligasHtml = '<p style="color:#6b7a99;font-size:13px;padding:10px 0">No hay ligas creadas aun.</p>';
   } else {
     DB.ligas.forEach(function(l) {
-      var eqs = DB.equipos.filter(function(e){return e.liga_id===l.id;});
+      var eqsSet={};
+      DB.partidos.filter(function(p){return p.liga_id===l.id;}).forEach(function(p){eqsSet[p.local_id]=true;eqsSet[p.visitante_id]=true;});
+      var eqs={length:Object.keys(eqsSet).length};
       var pts = DB.partidos.filter(function(p){return p.liga_id===l.id&&p.completado;});
       var pendientes = DB.partidos.filter(function(p){return p.liga_id===l.id&&!p.completado;});
       ligasHtml += '<div class="card" style="cursor:pointer;margin-bottom:10px;transition:border-color .15s" data-liga="'+l.id+'" onmouseenter="this.style.borderColor=\'#00e676\'" onmouseleave="this.style.borderColor=\'#1e2d47\'">' +
@@ -281,6 +304,7 @@ function buildHome() {
     '</div>' +
     // Gestion equipos
     '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+    '<button class="btn btn-ghost" id="btn-marcador">📺 Marcador en vivo</button>' +
     '<button class="btn btn-ghost" id="btn-equipos">👕 Gestionar equipos</button>' +
     '<button class="btn btn-ghost" id="btn-stats-global">📊 Stats globales</button>' +
     '</div>' +
@@ -291,7 +315,12 @@ function buildHome() {
 function buildLiga() {
   var liga = getLiga(VIEW.ligaId);
   if(!liga) return '<p style="color:#ff3d57">Liga no encontrada.</p>';
-  var eqIds = DB.equipos.filter(function(e){return e.liga_id===liga.id;}).map(function(e){return e.id;});
+  // Obtener equipos participantes a partir de los partidos de la liga
+  var eqIdsSet = {};
+  DB.partidos.filter(function(p){return p.liga_id===liga.id;}).forEach(function(p){
+    eqIdsSet[p.local_id]=true; eqIdsSet[p.visitante_id]=true;
+  });
+  var eqIds = Object.keys(eqIdsSet);
   var psLiga = partidosDe(liga.id, null);
   var tabla = calcTabla(eqIds, psLiga);
   var jornadas = jornadasDe(liga.id, null).sort(function(a,b){return a.numero-b.numero;});
@@ -363,7 +392,11 @@ function buildLiga() {
 function buildTorneo() {
   var torneo = getTorneo(VIEW.torneoId);
   if(!torneo) return '<p style="color:#ff3d57">Torneo no encontrado.</p>';
-  var eqIds = DB.equipos.filter(function(e){return e.torneo_id===torneo.id;}).map(function(e){return e.id;});
+  var eqIdsSet = {};
+  DB.partidos.filter(function(p){return p.torneo_id===torneo.id;}).forEach(function(p){
+    eqIdsSet[p.local_id]=true; eqIdsSet[p.visitante_id]=true;
+  });
+  var eqIds = Object.keys(eqIdsSet);
   var psTorneo = partidosDe(null, torneo.id);
   var jornadas = jornadasDe(null, torneo.id).sort(function(a,b){return a.numero-b.numero;});
 
@@ -421,19 +454,32 @@ function buildModalNuevaLiga() {
       '<span style="font-weight:600">'+e.nombre+'</span></label>';
   }).join('');
 
+  var sinEqs = '<p style="color:#6b7a99;font-size:13px">No hay equipos disponibles. Crea equipos primero.</p>';
+
   return '<div class="modal-overlay" id="modal-overlay">' +
     '<div class="modal-box">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
-    '<h2 class="h2">🏆 Nueva Liga</h2>' +
-    '<button class="btn btn-ghost" id="btn-modal-close">✕</button></div>' +
+    '<h2 class="h2">Nueva Liga</h2>' +
+    '<button class="btn btn-ghost" id="btn-modal-close">X</button></div>' +
     '<div class="flex-col">' +
     '<div><label class="label">Nombre de la liga</label><input type="text" id="nl-nombre" placeholder="Ej: Liga Primavera 2025" class="inp"/></div>' +
     '<div><label class="label">Temporada</label><input type="text" id="nl-temporada" placeholder="Ej: 2024-2025" class="inp"/></div>' +
-    '<div><label class="label">Vueltas</label>' +
+    '<div><label class="label">Tipo de calendario</label>' +
+    '<select id="nl-tipo-cal" class="sel">' +
+    '<option value="auto">Generar automaticamente (round-robin)</option>' +
+    '<option value="predefinido">Usar calendario predefinido (liga 7 equipos)</option>' +
+    '</select></div>' +
+    '<div id="nl-vueltas-div"><label class="label">Vueltas (solo para calendario automatico)</label>' +
     '<select id="nl-vueltas" class="sel"><option value="1">1 vuelta</option><option value="2" selected>2 vueltas</option></select></div>' +
+    '<div class="card-sm" style="background:rgba(255,214,0,0.05);border-color:rgba(255,214,0,0.2)">' +
+    '<p style="color:#ffd600;font-size:12px;font-weight:600;margin-bottom:6px">Calendario predefinido: equipos necesarios</p>' +
+    '<p style="color:#6b7a99;font-size:11px;line-height:1.6">Valencia CF · Villarreal · Logrono · Levante UD · Milan AC · Atletico de Madrid · Racing de Santander</p>' +
+    '<p style="color:#6b7a99;font-size:11px;margin-top:4px">Los nombres de los equipos deben coincidir exactamente (sin tildes).</p>' +
+    '</div>' +
     '<div><label class="label">Equipos participantes</label>' +
-    (todosEqs.length?optsEqs:'<p style="color:#6b7a99;font-size:13px">No hay equipos disponibles. Crea equipos primero en \'Gestionar equipos\'.</p>') + '</div>' +
-    '<button class="btn btn-green" id="btn-crear-liga" style="width:100%">Generar calendario y crear liga</button>' +
+    (todosEqs.length?optsEqs:sinEqs) +
+    '</div>' +
+    '<button class="btn btn-green" id="btn-crear-liga" style="width:100%">Crear liga</button>' +
     '</div></div></div>';
 }
 
@@ -696,6 +742,91 @@ function buildActa() {
     '</div>';
 }
 
+// ── MARCADOR EN VIVO ──────────────────────────────────────────────
+function buildMarcador() {
+  var wip = loadWip();
+  var wipOk = wip && wip.localId && wip.visitanteId;
+  var ultimo = wipOk
+    ? {local_id:wip.localId, visitante_id:wip.visitanteId,
+       goles_local:(wip.goles||[]).filter(function(g){return g.equipo==='local';}).length,
+       goles_visitante:(wip.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
+       goles:wip.goles||[], expulsiones:wip.expulsiones||[], cambios:wip.cambios||[],
+       fecha:wip.fecha, jornada:wip.jornada||'?', liga_id:wip.ligaId}
+    : DB.partidos.filter(function(p){return p.completado;}).sort(function(a,b){
+        return new Date(b.created_at||0)-new Date(a.created_at||0);
+      })[0] || null;
+
+  var s = CRON;
+  var minP = s.parte===1?s.min:15+s.min;
+  var cronColor = s.alerta?'#ff3d57':s.run?'#00e676':'#6b7a99';
+
+  var cronBtns = '';
+  if(!s.run&&!s.fin) cronBtns+='<button class="btn btn-green" id="cron-iniciar">'+(s.parte===1&&s.min===0?'Iniciar':'Reanudar')+'</button>';
+  if(s.run)  cronBtns+='<button class="btn btn-yellow" id="cron-pausar">Pausar</button>';
+  if(s.alerta&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">2a parte</button>';
+  if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">Fin</button>';
+  if(s.fin)  cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
+
+  var bcHtml = '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span>' +
+    '<span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div>';
+
+  if(!ultimo) return bcHtml +
+    '<div style="text-align:center;padding:60px">' +
+    '<div style="font-size:56px;margin-bottom:14px">📺</div>' +
+    '<h2 class="h2">Marcador en directo</h2>' +
+    '<p style="color:#6b7a99;margin-top:8px">Aparecera aqui cuando empieces un acta.</p></div>';
+
+  var nL = nEq(ultimo.local_id), nV = nEq(ultimo.visitante_id);
+  var liga = ultimo.liga_id ? getLiga(ultimo.liga_id) : null;
+  var goles = (ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
+
+  var golesHtml = goles.map(function(g){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:#1a2438;margin-bottom:6px">' +
+      '<div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#00e676;min-width:40px">'+pad(g.minuto)+"'</div>" +
+      '<div style="flex:1"><div style="font-weight:700">'+g.autor+'</div>' +
+      '<div style="color:#6b7a99;font-size:12px">'+(g.equipo==='local'?nL:nV)+'</div></div>' +
+      '<span class="badge" style="background:rgba('+(g.equipo==='local'?'0,230,118':'255,214,0')+',0.15);color:'+(g.equipo==='local'?'#00e676':'#ffd600')+'">'+(g.equipo==='local'?nL:nV)+'</span>' +
+      '</div>';
+  }).join('');
+
+  return bcHtml + '<div style="display:flex;flex-direction:column;gap:14px">' +
+    '<div style="background:#000;border:2px solid rgba(0,230,118,0.2);border-radius:16px;padding:20px 18px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">' +
+    '<div>' +
+    '<div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(s.min)+':'+pad(s.sec)+'</div>' +
+    '<div id="crono-status" style="color:#6b7a99;font-size:12px;margin-top:3px">'+(s.fin?'FIN DEL PARTIDO':s.alerta?'Fin parte '+s.parte:s.run?'Parte '+s.parte+' min '+minP:'Parte '+s.parte+' pausado')+'</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+cronBtns+'</div>' +
+    (!s.fin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">+min extra:</span>' +
+    '<input type="number" id="cron-extra" min="0" max="10" value="'+s.extra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"/></div>':'') +
+    '</div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center">' +
+    '<div><div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#fff">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div>' +
+    '<div style="font-family:'Oswald',sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div>' +
+    '<div><div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#fff">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div>' +
+    '</div>' +
+    '<div style="text-align:center;color:#6b7a99;font-size:12px;margin-top:8px">' +
+    (liga?'<span class="badge" style="background:rgba(0,230,118,0.1);color:#00e676;margin-right:8px">'+liga.nombre+'</span>':'') +
+    'Jornada '+ultimo.jornada+(ultimo.fecha?' · '+ultimo.fecha:'') +
+    (wipOk?' · <span class="badge" style="background:rgba(255,214,0,0.15);color:#ffd600">En curso</span>':'') +
+    '</div>' +
+    '</div>' +
+    (goles.length?'<div class="card"><p class="section-title">Goles</p>'+golesHtml+'</div>':'') +
+    '</div>';
+}
+
+function attachMarcadorEvents(){
+  var ic=$('cron-iniciar'),pa=$('cron-pausar'),s2=$('cron-sig2'),fi=$('cron-fin'),re=$('cron-reset'),ex=$('cron-extra');
+  if(ic) ic.addEventListener('click',cronIniciar);
+  if(pa) pa.addEventListener('click',cronPausar);
+  if(s2) s2.addEventListener('click',cronSig2);
+  if(fi) fi.addEventListener('click',cronFin);
+  if(re) re.addEventListener('click',cronReset);
+  if(ex) ex.addEventListener('input',function(){CRON.extra=+this.value;});
+}
+
+
 // ── EQUIPOS ───────────────────────────────────────────────────────
 function buildEquipos() {
   // Solo equipos sin liga ni torneo asignado (libres)
@@ -758,7 +889,30 @@ function buildStats() {
     '<div class="card"><p class="section-title">📋 Resumen</p><div class="grid2">' +
     [['⚽','Partidos',c.length],['🎯','Goles',c.reduce(function(s,p){return s+p.goles_local+p.goles_visitante;},0)],['🟨','Faltas',c.reduce(function(s,p){return s+(p.faltas||[]).length;},0)],['🚨','Expulsiones',c.reduce(function(s,p){return s+(p.expulsiones||[]).length;},0)]].map(function(r){
       return '<div class="card-sm" style="text-align:center"><div style="font-size:20px">'+r[0]+'</div><div style="font-family:\'Oswald\',sans-serif;font-size:22px;font-weight:700;color:#00e676;margin-top:4px">'+r[2]+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">'+r[1]+'</div></div>';
-    }).join('') + '</div></div></div>';
+    }).join('') + '</div></div>' +
+
+    // Fueras de banda por equipo
+    (function(){
+      var fM = {};
+      c.forEach(function(p){
+        if(p.fueras_local&&p.local_id)   fM[p.local_id]   = (fM[p.local_id]||0)   + (p.fueras_local||0);
+        if(p.fueras_visitante&&p.visitante_id) fM[p.visitante_id] = (fM[p.visitante_id]||0) + (p.fueras_visitante||0);
+      });
+      var tF2 = Object.entries(fM).sort(function(a,b){return b[1]-a[1];});
+      if(!tF2.length) return '';
+      var mx = tF2[0][1];
+      return '<div class="card" style="margin-top:0"><p class="section-title">Fueras de banda por equipo</p>' +
+        tF2.map(function(d,i){
+          return '<div style="margin-bottom:8px">' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:3px">' +
+            '<span style="font-size:13px;font-weight:600">'+(i===0?'⚡':i===1?'  ':' ')+' '+nEq(d[0])+'</span>' +
+            '<span style="color:#ff9800;font-weight:700;font-size:14px">'+d[1]+' fueras</span></div>' +
+            '<div style="background:#1a2438;border-radius:4px;height:5px">' +
+            '<div style="background:#ff9800;border-radius:4px;height:5px;width:'+(d[1]/mx*100)+'%"></div></div></div>';
+        }).join('') + '</div>';
+    })() +
+
+    '</div>';
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────
@@ -788,6 +942,7 @@ function attachEvents() {
   else if(VIEW.screen==='liga') attachLigaEvents();
   else if(VIEW.screen==='torneo') attachTorneoEvents();
   else if(VIEW.screen==='acta') attachActaEvents();
+  else if(VIEW.screen==='marcador') attachMarcadorEvents();
   else if(VIEW.screen==='equipos') attachEquiposEvents();
 
   // Modal events
@@ -802,6 +957,8 @@ function attachHomeEvents(){
   if(bnl) bnl.addEventListener('click',function(){MODAL={type:'nueva-liga',data:{},editando:false};render();});
   if(bnt) bnt.addEventListener('click',function(){MODAL={type:'nuevo-torneo',data:{},editando:false};render();});
   if(bas) bas.addEventListener('click',function(){WIP=newWip();saveWip(WIP);VIEW.screen='acta';render();});
+  var bmc=$('btn-marcador');
+  if(bmc) bmc.addEventListener('click',function(){VIEW.screen='marcador';render();});
   if(beq) beq.addEventListener('click',function(){VIEW.screen='equipos';render();});
   if(bst) bst.addEventListener('click',function(){VIEW.screen='stats';render();});
   // Abrir liga
@@ -962,21 +1119,42 @@ function attachModalNuevaLigaEvents(){
     var nombre=($('nl-nombre').value||'').trim();
     var temporada=($('nl-temporada').value||'').trim();
     var vueltas=+($('nl-vueltas').value||2);
+    var tipoCal=($('nl-tipo-cal')?$('nl-tipo-cal').value:'auto');
     var eqIds=[];
     document.querySelectorAll('.eq-check:checked').forEach(function(cb){eqIds.push(cb.value);});
     if(!nombre){alert('Escribe un nombre para la liga.');return;}
     if(eqIds.length<2){alert('Selecciona al menos 2 equipos.');return;}
     btn.disabled=true; btn.textContent='Creando...';
     var ligaId=uid();
-    // Crear liga
-    var r1=await db.from('ligas').insert({id:ligaId,nombre:nombre,temporada:temporada,vueltas:vueltas,estado:'activa'});
+    var r1=await db.from('ligas').insert({id:ligaId,nombre:nombre,temporada:temporada,vueltas:tipoCal==='predefinido'?2:vueltas,estado:'activa'});
     if(r1.error){alert('Error: '+r1.error.message);btn.disabled=false;btn.textContent='Crear liga';return;}
-    // Asignar equipos a la liga (actualizar jugadores con liga_id)
     for(var i=0;i<eqIds.length;i++){
       await db.from('jugadores').update({liga_id:ligaId}).eq('id',eqIds[i]);
     }
-    // Generar calendario
-    var calendario=generarCalendario(eqIds,vueltas);
+
+    var calendario;
+    if(tipoCal==='predefinido'){
+      // Usar el calendario predefinido, mapeando nombres a IDs
+      // Construir mapa nombre->id con los equipos seleccionados
+      var nombreAId={};
+      eqIds.forEach(function(id){
+        var eq=DB.equipos.find(function(e){return e.id===id;});
+        if(eq) nombreAId[eq.nombre.toLowerCase()]=id;
+      });
+      calendario=CAL_JORNADAS.map(function(j){
+        var partidos=[];
+        j.partidos.forEach(function(p){
+          var lid=nombreAId[p[0].toLowerCase()];
+          var vid=nombreAId[p[1].toLowerCase()];
+          if(lid&&vid) partidos.push({local:lid,visitante:vid});
+          else console.warn('Equipo no encontrado:',p[0],'o',p[1],'- revisa que los nombres coinciden exactamente');
+        });
+        return {numero:j.n,partidos:partidos};
+      });
+    } else {
+      calendario=generarCalendario(eqIds,vueltas);
+    }
+
     for(var ji=0;ji<calendario.length;ji++){
       var jorData=calendario[ji];
       var jorId=uid();
@@ -996,6 +1174,7 @@ function attachModalNuevaLigaEvents(){
     MODAL={type:null,data:null,editando:false};
     VIEW={screen:'liga',ligaId:ligaId,torneoId:null};
     render();
+    alert('Liga creada con '+calendario.length+' jornadas y '+calendario.reduce(function(s,j){return s+j.partidos.length;},0)+' partidos.');
   });
 }
 
