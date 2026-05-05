@@ -29,9 +29,9 @@ select option{background:#1a2438}
 .label{font-size:11px;color:#6b7a99;font-weight:600;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px}
 .section-title{color:#6b7a99;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 .badge{border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600;white-space:nowrap;display:inline-block}
-.h1{font-family:'Oswald',sans-serif;font-size:27px;font-weight:700;color:#00e676;letter-spacing:2px}
-.h2{font-family:'Oswald',sans-serif;font-size:21px;font-weight:700;color:#e8eaf0;letter-spacing:1px}
-.h3{font-family:'Oswald',sans-serif;font-size:17px;font-weight:700;color:#e8eaf0;letter-spacing:1px}
+.h1{font-family:Oswald,sans-serif;font-size:27px;font-weight:700;color:#00e676;letter-spacing:2px}
+.h2{font-family:Oswald,sans-serif;font-size:21px;font-weight:700;color:#e8eaf0;letter-spacing:1px}
+.h3{font-family:Oswald,sans-serif;font-size:17px;font-weight:700;color:#e8eaf0;letter-spacing:1px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .flex-col{display:flex;flex-direction:column;gap:14px}
 .nav{display:flex;gap:3px;background:#111827;border:1px solid #1e2d47;border-radius:12px;padding:5px;flex-wrap:wrap;margin-bottom:14px}
@@ -48,8 +48,8 @@ select option{background:#1a2438}
 .form-add{background:rgba(26,36,56,0.88);border-radius:8px;padding:12px;margin-top:8px}
 .counter{display:flex;align-items:center;gap:8px}
 .counter-btn{background:#1a2438;border:1px solid #1e2d47;border-radius:6px;width:30px;height:30px;color:#e8eaf0;font-size:18px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center}
-.counter-val{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;min-width:26px;text-align:center}
-.crono-display{font-family:'Oswald',sans-serif;font-size:46px;font-weight:700;line-height:1;letter-spacing:2px}
+.counter-val{font-family:Oswald,sans-serif;font-size:22px;font-weight:700;min-width:26px;text-align:center}
+.crono-display{font-family:Oswald,sans-serif;font-size:46px;font-weight:700;line-height:1;letter-spacing:2px}
 .partido-pendiente{cursor:pointer;transition:border-color .15s;border:1px solid #1e2d47}
 .partido-pendiente:hover{border-color:#00e676}
 .partido-jugado{cursor:pointer;transition:border-color .15s}
@@ -298,7 +298,7 @@ function buildHome() {
       return '<div class="card-sm" style="cursor:pointer;margin-bottom:8px" data-pid="'+p.id+'">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<span style="color:#6b7a99;font-size:12px">'+p.fecha+' · J'+p.jornada+'</span>' +
-        '<div style="font-family:\'Oswald\',sans-serif;font-size:18px;font-weight:700;color:#00e676">'+p.goles_local+' – '+p.goles_visitante+'</div></div>' +
+        '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#00e676">'+p.goles_local+' – '+p.goles_visitante+'</div></div>' +
         '<div style="font-weight:600;margin-top:4px">'+nEq(p.local_id)+' vs '+nEq(p.visitante_id)+'</div></div>';
     }).join(''):'<p style="color:#6b7a99;font-size:13px;padding:10px 0">Sin actas sueltas.</p>') +
     '</div>' +
@@ -365,8 +365,8 @@ function buildLiga() {
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
             '<span style="font-weight:600;font-size:14px;flex:1;text-align:right">'+nEq(p.local_id)+'</span>' +
             (jugado
-              ? '<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:\'Oswald\',sans-serif;font-size:20px;font-weight:700;color:#4fc3f7;letter-spacing:3px;white-space:nowrap">'+p.goles_local+' – '+p.goles_visitante+'</div>'
-              : '<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:\'Oswald\',sans-serif;font-size:16px;font-weight:700;color:#1e2d47;letter-spacing:3px;white-space:nowrap">vs</div>') +
+              ? '<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#4fc3f7;letter-spacing:3px;white-space:nowrap">'+p.goles_local+' – '+p.goles_visitante+'</div>'
+              : '<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:Oswald,sans-serif;font-size:16px;font-weight:700;color:#1e2d47;letter-spacing:3px;white-space:nowrap">vs</div>') +
             '<span style="font-weight:600;font-size:14px;flex:1">'+nEq(p.visitante_id)+'</span>' +
             '<span class="badge" style="background:rgba('+(jugado?'79,195,247':'0,230,118')+',0.1);color:'+(jugado?'#4fc3f7':'#00e676')+';margin-left:4px">'+(jugado?'✓':'▶')+'</span>' +
             '</div></div>';
@@ -429,7 +429,7 @@ function buildTorneo() {
       contenido += '<div class="'+(jugado?'partido-jugado':'partido-pendiente')+' card-sm" style="margin-bottom:7px;background:'+(jugado?'rgba(79,195,247,0.05)':'rgba(255,214,0,0.03)')+'" data-pid="'+p.id+'">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
         '<span style="font-weight:600;font-size:14px;flex:1;text-align:right">'+nEq(p.local_id)+'</span>' +
-        (jugado?'<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:\'Oswald\',sans-serif;font-size:20px;font-weight:700;color:#4fc3f7;letter-spacing:3px">'+p.goles_local+' – '+p.goles_visitante+'</div>':'<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:\'Oswald\',sans-serif;font-size:16px;color:#1e2d47;letter-spacing:3px">vs</div>') +
+        (jugado?'<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#4fc3f7;letter-spacing:3px">'+p.goles_local+' – '+p.goles_visitante+'</div>':'<div style="background:#1a2438;border-radius:8px;padding:4px 14px;font-family:Oswald,sans-serif;font-size:16px;color:#1e2d47;letter-spacing:3px">vs</div>') +
         '<span style="font-weight:600;font-size:14px;flex:1">'+nEq(p.visitante_id)+'</span>' +
         '<span class="badge" style="background:rgba('+(jugado?'79,195,247':'255,214,0')+',0.1);color:'+(jugado?'#4fc3f7':'#ffd600')+';">'+(jugado?'✓':'▶')+'</span>' +
         '</div></div>';
@@ -530,12 +530,12 @@ function buildModalPartido() {
   var marcador = ed
     ? '<div style="display:grid;grid-template-columns:1fr 40px 1fr;gap:10px;align-items:end;margin-bottom:16px">' +
       '<div><label class="label">'+nL+'</label><input type="number" id="md-gL" value="'+(p.goles_local||0)+'" min="0" class="inp"/></div>' +
-      '<div style="color:#6b7a99;font-family:\'Oswald\',sans-serif;font-size:26px;text-align:center;padding-bottom:8px">–</div>' +
+      '<div style="color:#6b7a99;font-family:Oswald,sans-serif;font-size:26px;text-align:center;padding-bottom:8px">–</div>' +
       '<div><label class="label">'+nV+'</label><input type="number" id="md-gV" value="'+(p.goles_visitante||0)+'" min="0" class="inp"/></div></div>'
     : '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-bottom:14px">' +
-      '<div style="text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-size:18px;font-weight:700">'+nL+'</div>'+(p.portero_local?'<div style="color:#4fc3f7;font-size:12px;margin-top:3px">🧤 '+p.portero_local+'</div>':'')+'</div>' +
-      '<div style="background:#1a2438;border-radius:12px;padding:8px 20px;font-family:\'Oswald\',sans-serif;font-size:34px;font-weight:700;color:#00e676;text-align:center;letter-spacing:5px">'+(p.goles_local||0)+' – '+(p.goles_visitante||0)+'</div>' +
-      '<div style="text-align:center"><div style="font-family:\'Oswald\',sans-serif;font-size:18px;font-weight:700">'+nV+'</div>'+(p.portero_visitante?'<div style="color:#4fc3f7;font-size:12px;margin-top:3px">🧤 '+p.portero_visitante+'</div>':'')+'</div>' +
+      '<div style="text-align:center"><div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700">'+nL+'</div>'+(p.portero_local?'<div style="color:#4fc3f7;font-size:12px;margin-top:3px">🧤 '+p.portero_local+'</div>':'')+'</div>' +
+      '<div style="background:#1a2438;border-radius:12px;padding:8px 20px;font-family:Oswald,sans-serif;font-size:34px;font-weight:700;color:#00e676;text-align:center;letter-spacing:5px">'+(p.goles_local||0)+' – '+(p.goles_visitante||0)+'</div>' +
+      '<div style="text-align:center"><div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700">'+nV+'</div>'+(p.portero_visitante?'<div style="color:#4fc3f7;font-size:12px;margin-top:3px">🧤 '+p.portero_visitante+'</div>':'')+'</div>' +
       '</div>';
 
   var formAdd = !ed?'':
@@ -658,9 +658,9 @@ function buildActa() {
     '<div><label class="label">Arbitro</label><input type="text" id="w-arbitro" value="'+(w.arbitro||'')+'" placeholder="Nombre del arbitro" class="inp" style="margin-bottom:12px"/></div>' +
     (w.localId&&w.visitanteId?
       '<div style="text-align:center;background:#1a2438;border-radius:10px;padding:12px;margin-top:4px">' +
-      '<span style="font-family:\'Oswald\',sans-serif;font-size:17px;font-weight:700">'+nL+'</span>' +
+      '<span style="font-family:Oswald,sans-serif;font-size:17px;font-weight:700">'+nL+'</span>' +
       '<span style="color:#6b7a99;margin:0 12px">vs</span>' +
-      '<span style="font-family:\'Oswald\',sans-serif;font-size:17px;font-weight:700">'+nV+'</span>' +
+      '<span style="font-family:Oswald,sans-serif;font-size:17px;font-weight:700">'+nV+'</span>' +
       '</div>'
     :
       '<div class="grid2" style="margin-top:4px">' +
@@ -697,9 +697,9 @@ function buildActa() {
     // Goles
     '<div class="card"><p class="section-title">⚽ Goles</p>' +
     '<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #1e2d47">' +
-    '<span style="font-family:\'Oswald\',sans-serif;font-size:16px">'+nL+'</span>' +
-    '<div style="background:#1a2438;border-radius:10px;padding:5px 16px;font-family:\'Oswald\',sans-serif;font-size:24px;color:#00e676;font-weight:700;letter-spacing:4px">'+( w.goles||[]).filter(function(g){return g.equipo==='local';}).length+' – '+(w.goles||[]).filter(function(g){return g.equipo==='visitante';}).length+'</div>' +
-    '<span style="font-family:\'Oswald\',sans-serif;font-size:16px">'+nV+'</span></div>' +
+    '<span style="font-family:Oswald,sans-serif;font-size:16px">'+nL+'</span>' +
+    '<div style="background:#1a2438;border-radius:10px;padding:5px 16px;font-family:Oswald,sans-serif;font-size:24px;color:#00e676;font-weight:700;letter-spacing:4px">'+( w.goles||[]).filter(function(g){return g.equipo==='local';}).length+' – '+(w.goles||[]).filter(function(g){return g.equipo==='visitante';}).length+'</div>' +
+    '<span style="font-family:Oswald,sans-serif;font-size:16px">'+nV+'</span></div>' +
     '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-gol-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Goleador</label><input type="text" id="w-gol-autor" placeholder="Nombre" class="inp"/></div></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
     '<div><label class="label">Equipo</label><select id="w-gol-eq" class="sel">'+optsEq+'</select></div>' +
@@ -782,7 +782,7 @@ function buildMarcador() {
 
   var golesHtml = goles.map(function(g){
     return '<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:#1a2438;margin-bottom:6px">' +
-      '<div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#00e676;min-width:40px">'+pad(g.minuto)+"'</div>" +
+      '<div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#00e676;min-width:40px">'+pad(g.minuto)+"'</div>" +
       '<div style="flex:1"><div style="font-weight:700">'+g.autor+'</div>' +
       '<div style="color:#6b7a99;font-size:12px">'+(g.equipo==='local'?nL:nV)+'</div></div>' +
       '<span class="badge" style="background:rgba('+(g.equipo==='local'?'0,230,118':'255,214,0')+',0.15);color:'+(g.equipo==='local'?'#00e676':'#ffd600')+'">'+(g.equipo==='local'?nL:nV)+'</span>' +
@@ -802,9 +802,9 @@ function buildMarcador() {
     '<input type="number" id="cron-extra" min="0" max="10" value="'+s.extra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"/></div>':'') +
     '</div></div>' +
     '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center">' +
-    '<div><div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#fff">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div>' +
-    '<div style="font-family:'Oswald',sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div>' +
-    '<div><div style="font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#fff">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div>' +
+    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div>' +
+    '<div style="font-family:Oswald,sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div>' +
+    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div>' +
     '</div>' +
     '<div style="text-align:center;color:#6b7a99;font-size:12px;margin-top:8px">' +
     (liga?'<span class="badge" style="background:rgba(0,230,118,0.1);color:#00e676;margin-right:8px">'+liga.nombre+'</span>':'') +
@@ -839,7 +839,7 @@ function buildEquipos() {
     return eqs.map(function(e,i){
       return '<div class="card-sm" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
-        '<span style="font-family:\'Oswald\',sans-serif;font-size:16px;color:#6b7a99;min-width:20px">'+(i+1)+'</span>' +
+        '<span style="font-family:Oswald,sans-serif;font-size:16px;color:#6b7a99;min-width:20px">'+(i+1)+'</span>' +
         '<span style="font-weight:600">'+e.nombre+'</span>' +
         (subtitle?'<span style="color:#6b7a99;font-size:11px">'+subtitle(e)+'</span>':'') +
         '</div>' +
@@ -888,7 +888,7 @@ function buildStats() {
     '<div class="card"><p class="section-title">🟨 Mas faltas</p>'+rl(tF,'#ffea00',' faltas')+'</div>' +
     '<div class="card"><p class="section-title">📋 Resumen</p><div class="grid2">' +
     [['⚽','Partidos',c.length],['🎯','Goles',c.reduce(function(s,p){return s+p.goles_local+p.goles_visitante;},0)],['🟨','Faltas',c.reduce(function(s,p){return s+(p.faltas||[]).length;},0)],['🚨','Expulsiones',c.reduce(function(s,p){return s+(p.expulsiones||[]).length;},0)]].map(function(r){
-      return '<div class="card-sm" style="text-align:center"><div style="font-size:20px">'+r[0]+'</div><div style="font-family:\'Oswald\',sans-serif;font-size:22px;font-weight:700;color:#00e676;margin-top:4px">'+r[2]+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">'+r[1]+'</div></div>';
+      return '<div class="card-sm" style="text-align:center"><div style="font-size:20px">'+r[0]+'</div><div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:700;color:#00e676;margin-top:4px">'+r[2]+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">'+r[1]+'</div></div>';
     }).join('') + '</div></div>' +
 
     // Fueras de banda por equipo
