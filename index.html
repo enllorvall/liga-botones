@@ -636,7 +636,7 @@ function buildActa(){
     (!s.cronFin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">Minutos extra:</span><input type="number" id="cron-extra" min="0" max="10" value="'+s.cronExtra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"></div>':'') +
     '</div></div></div>' +
 
-    '<div class="card"><p class="section-title">&#129348; &Aacute;rbitro, Porteros y paradas</p><div style="margin-bottom:12px"><label class="label">&#193;rbitro</label><input type="text" id="w-arbitro" value="'+( w.arbitro||'')+'" placeholder="Nombre" class="inp"/></div><div class="grid2">' +
+    '<div class="card"><p class="section-title">&#129348; &Aacute;rbitro, Porteros y paradas</p><div style="margin-bottom:12px"><label class="label">&#193;rbitro</label><input type="text" id="w-arbitro" placeholder="Nombre" class="inp"/></div><div class="grid2">' +
     '<div><label class="label">Portero &mdash; '+nL+'</label><input type="text" id="w-porteroL" value="'+w.porteroL+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
     '<div class="counter"><span style="color:#6b7a99;font-size:13px;min-width:55px">Paradas</span><button class="counter-btn" id="pL-dec">&#8722;</button><span class="counter-val" id="pL-val" style="color:#4fc3f7">'+w.paradasL+'</span><button class="counter-btn" id="pL-inc">+</button></div></div>' +
     '<div><label class="label">Portero &mdash; '+nV+'</label><input type="text" id="w-porteroV" value="'+w.porteroV+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
