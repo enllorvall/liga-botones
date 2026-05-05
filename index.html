@@ -99,7 +99,7 @@ var STATE = {
 };
 var cronInterval = null;
 var cronAlertado = false;
-var WIP = loadWip() || {jornada:"",fecha:hoy(),localId:"",visitanteId:"",porteroL:"",porteroV:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:""};
+var WIP = loadWip() || {jornada:"",fecha:hoy(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:""};
 
 // ── UTILS ─────────────────────────────────────────────────────────
 function uid(){ return Math.random().toString(36).slice(2,9); }
@@ -321,9 +321,10 @@ function buildPartidos(){
     html += '<div class="card partido-card" data-pid="'+p.id+'" style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">' +
       '<span style="color:#6b7a99;font-size:12px">&#128197; '+p.fecha+' &middot; J'+p.jornada+'</span>' +
-      '<div style="display:flex;gap:6px">' +
+      '<div style="display:flex;gap:6px;align-items:center">' +
       '<span class="badge" style="background:rgba(255,214,0,0.15);color:#ffd600">&#9998; Editar</span>' +
       '<span class="badge" style="background:rgba(79,195,247,0.15);color:#4fc3f7">&#128424; PDF</span>' +
+      '<button class="btn btn-red del-partido" data-pid="'+p.id+'" style="padding:3px 10px;font-size:12px" onclick="event.stopPropagation()">&#128465;</button>' +
       '</div></div>' +
       '<div style="display:flex;align-items:center;justify-content:center;gap:16px">' +
       '<span style="font-family:\'Oswald\',sans-serif;font-size:18px;font-weight:700">'+nE(p.local_id)+'</span>' +
@@ -335,6 +336,15 @@ function buildPartidos(){
 }
 
 function attachPartidosEvents(){
+  document.querySelectorAll('.del-partido').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(!window.confirm('Eliminar este partido del historial?')) return;
+      var pid = this.dataset.pid;
+      db.from('partidos').delete().eq('id',pid).then(function(){ cargar().then(render); });
+    });
+  });
+
   document.querySelectorAll('.partido-card').forEach(function(card){
     card.addEventListener('click', function(){
       var pid = this.dataset.pid;
@@ -431,7 +441,7 @@ function buildModal(){
     '<button class="btn btn-ghost" id="btn-modal-close">&#x2715;</button>' +
     '</div></div>' +
     marcador +
-    '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">&#128197; '+p.fecha+'</p>' +
+    '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">&#128197; '+p.fecha+'+(p.arbitro?' &nbsp;&middot;&nbsp; &#129494; '+p.arbitro:'')+'</p>' +
     '<p class="section-title">&#9917; Goles</p>' + (!gs.length?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">&mdash;</p>':'') + evRow(gs,'0,230,118',ed) + formGol +
     '<p class="section-title" style="margin-top:12px">&#128999; Faltas</p>' + (!fs.length?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">&mdash;</p>':'') + evRow(fs,'255,234,0',ed) + formFalta +
     '<p class="section-title" style="margin-top:12px">&#128680; Expulsiones</p>' + (!xs.length?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">&mdash;</p>':'') + evRow(xs,'255,61,87',ed) + formExp +
@@ -625,7 +635,7 @@ function buildActa(){
     (!s.cronFin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">Minutos extra:</span><input type="number" id="cron-extra" min="0" max="10" value="'+s.cronExtra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"></div>':'') +
     '</div></div></div>' +
 
-    '<div class="card"><p class="section-title">&#129348; Porteros y paradas</p><div class="grid2">' +
+    '<div class="card"><p class="section-title">&#129348; &Aacute;rbitro, Porteros y paradas</p><div style="margin-bottom:12px"><label class="label">Árbitro</label><input type="text" id="w-arbitro" placeholder="Nombre del árbitro" class="inp"/></div><div class="grid2">' +
     '<div><label class="label">Portero &mdash; '+nL+'</label><input type="text" id="w-porteroL" value="'+w.porteroL+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
     '<div class="counter"><span style="color:#6b7a99;font-size:13px;min-width:55px">Paradas</span><button class="counter-btn" id="pL-dec">&#8722;</button><span class="counter-val" id="pL-val" style="color:#4fc3f7">'+w.paradasL+'</span><button class="counter-btn" id="pL-inc">+</button></div></div>' +
     '<div><label class="label">Portero &mdash; '+nV+'</label><input type="text" id="w-porteroV" value="'+w.porteroV+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
@@ -689,7 +699,7 @@ function attachActaEvents(){
   function bindSel(id,key){ var el=$(id); if(el){ el.value=WIP[key]||''; el.addEventListener('change',function(){wipSet(key,this.value);render();}); } }
   bindInp('w-jornada','jornada'); bindInp('w-fecha','fecha');
   bindInp('w-porteroL','porteroL'); bindInp('w-porteroV','porteroV');
-  bindInp('w-notas','notas');
+  bindInp('w-notas','notas'); bindInp('w-arbitro','arbitro');
   bindSel('w-local','localId'); bindSel('w-visitante','visitanteId');
 
   // Contadores
@@ -751,7 +761,7 @@ function attachActaEvents(){
   var lim=$('btn-limpiar');
   if(lim) lim.addEventListener('click',function(){
     if(window.confirm('Borrar el borrador actual?')){
-      WIP={jornada:"",fecha:hoy(),localId:"",visitanteId:"",porteroL:"",porteroV:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:""};
+      WIP={jornada:"",fecha:hoy(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:""};
       clearWip(); cronReset(); render();
     }
   });
@@ -766,7 +776,7 @@ function attachActaEvents(){
     var partido = {
       id:uid(), jornada:Number(WIP.jornada), fecha:WIP.fecha,
       local_id:WIP.localId, visitante_id:WIP.visitanteId,
-      portero_local:WIP.porteroL, portero_visitante:WIP.porteroV,
+      arbitro:WIP.arbitro||'', portero_local:WIP.porteroL, portero_visitante:WIP.porteroV,
       paradas_local:WIP.paradasL, paradas_visitante:WIP.paradasV,
       fueras_local:WIP.fuerasL, fueras_visitante:WIP.fuerasV,
       goles:(WIP.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
@@ -779,7 +789,7 @@ function attachActaEvents(){
     };
     db.from('partidos').insert(partido).then(function(res){
       if(res.error){ alert('Error: '+res.error.message); gb.disabled=false; gb.textContent='Guardar Acta'; return; }
-      WIP={jornada:"",fecha:hoy(),localId:"",visitanteId:"",porteroL:"",porteroV:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:""};
+      WIP={jornada:"",fecha:hoy(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:""};
       clearWip(); cronReset();
       alert('Acta guardada correctamente');
       cargar().then(function(){ STATE.tab='partidos'; render(); });
@@ -871,7 +881,7 @@ function imprimirActa(p, eq){
   var xs=(p.expulsiones||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var cs=(p.cambios||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var SEC=function(t){return '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#666;border-bottom:1px solid #ddd;padding-bottom:3px;margin:12px 0 7px;font-weight:600">'+t+'</div>';};
-  var html='<div style="display:flex;justify-content:space-between;border-bottom:3px solid #111;padding-bottom:10px;margin-bottom:14px"><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;letter-spacing:2px">LIGA DE BOTONES</div><div style="font-size:12px;color:#555;margin-top:3px">Jornada '+p.jornada+' - '+p.fecha+'</div></div><div style="font-size:11px;color:#999">Acta oficial</div></div>';
+  var html='<div style="display:flex;justify-content:space-between;border-bottom:3px solid #111;padding-bottom:10px;margin-bottom:14px"><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;letter-spacing:2px">LIGA DE BOTONES</div><div style="font-size:12px;color:#555;margin-top:3px">Jornada '+p.jornada+' - '+p.fecha+(p.arbitro?' - Arbitro: '+p.arbitro:'')+'</div></div><div style="font-size:11px;color:#999">Acta oficial</div></div>';
   html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid #222"><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nL+'</div><div style="font-size:11px;color:#666;margin-top:2px">LOCAL</div>'+(p.portero_local?'<div style="font-size:12px;color:#444;margin-top:4px">'+p.portero_local+'</div>':'')+'</div><div style="font-family:Oswald,sans-serif;font-size:50px;font-weight:700;letter-spacing:10px;padding:8px 0;text-align:center">'+p.goles_local+' - '+p.goles_visitante+'</div><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nV+'</div><div style="font-size:11px;color:#666;margin-top:2px">VISITANTE</div>'+(p.portero_visitante?'<div style="font-size:12px;color:#444;margin-top:4px">'+p.portero_visitante+'</div>':'')+'</div></div>';
   if(gs.length){html+=SEC("GOLES")+'<table style="width:100%;border-collapse:collapse">'+gs.map(function(g){return fila(g.minuto,g.autor,(g.equipo==="local"?nL:nV)+(g.tipo!=="normal"?" - "+g.tipo:""),"#006600");}).join('')+'</table>';}
   if(fs.length){html+=SEC("FALTAS")+'<table style="width:100%;border-collapse:collapse">'+fs.map(function(f){return fila(f.minuto,f.jugador,(f.equipo==="local"?nL:nV)+" - "+(f.tarjeta==="roja"?"Roja":"Amarilla"),"#cc8800");}).join('')+'</table>';}
