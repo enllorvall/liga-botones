@@ -951,21 +951,46 @@ function buildMarcador() {
   return html;
 }
 
+function refrescarMarcador(){
+  // Recarga datos y actualiza el marcador SIN reconstruir toda la página
+  cargar().then(function(){
+    if(VIEW.screen !== 'marcador') return;
+    // Reconstruir solo el contenido del marcador
+    var app=$('app');
+    if(app){ app.innerHTML = buildMarcador(); attachMarcadorEvents(); }
+  });
+}
+
 function attachMarcadorEvents(){
-  var ic=$('cron-iniciar'),pa=$('cron-pausar'),s2=$('cron-sig2'),fi=$('cron-fin'),re=$('cron-reset'),ex=$('cron-extra');
+  var ic=$('cron-iniciar'),pa=$('cron-pausar'),s2=$('cron-sig2'),fi=$('cron-fin'),cr=$('cron-reset'),ex=$('cron-extra');
   if(ic) ic.addEventListener('click',cronIniciar);
   if(pa) pa.addEventListener('click',cronPausar);
   if(s2) s2.addEventListener('click',cronSig2);
   if(fi) fi.addEventListener('click',cronFin);
-  if(re) re.addEventListener('click',cronReset);
+  if(cr) cr.addEventListener('click',cronReset);
   if(ex) ex.addEventListener('input',function(){CRON.extra=+this.value;});
+
+  // Botón actualizar: recarga datos y reconstruye SOLO el marcador
   var br=$('btn-marcador-refresh');
-  if(br) br.addEventListener('click',function(){cargar().then(render);});
+  if(br) br.addEventListener('click',function(){ refrescarMarcador(); });
+
+  // Breadcrumb al home
+  var bcH=$('bc-home');
+  if(bcH) bcH.addEventListener('click',function(){
+    clearInterval(marcadorRefreshInterval);
+    VIEW={screen:'home',ligaId:null,torneoId:null};
+    render();
+  });
+
+  // Auto-refresco cada 10 segundos
   clearInterval(marcadorRefreshInterval);
-  marcadorRefreshInterval=setInterval(function(){
-    if(VIEW.screen==='marcador'){cargar().then(function(){if(VIEW.screen==='marcador')render();});}
-    else{clearInterval(marcadorRefreshInterval);}
-  },15000);
+  marcadorRefreshInterval = setInterval(function(){
+    if(VIEW.screen === 'marcador'){
+      refrescarMarcador();
+    } else {
+      clearInterval(marcadorRefreshInterval);
+    }
+  }, 10000);
 }
 
 function sincronizarEnCurso(){
@@ -1342,7 +1367,10 @@ if(CONFIGURED){
     .on('postgres_changes',{event:'*',schema:'public',table:'jugadores'},function(){cargar().then(render);})
     .on('postgres_changes',{event:'*',schema:'public',table:'ligas'},function(){cargar().then(render);})
     .on('postgres_changes',{event:'*',schema:'public',table:'torneos'},function(){cargar().then(render);})
-    .on('postgres_changes',{event:'*',schema:'public',table:'partidos'},function(){cargar().then(render);})
+    .on('postgres_changes',{event:'*',schema:'public',table:'partidos'},function(){
+      if(VIEW.screen==='marcador'){refrescarMarcador();}
+      else{cargar().then(render);}
+    })
     .subscribe();
 } else {
   render();
