@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Liga de Botones</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1047,7 +1050,7 @@ function buildActa() {
   function bandaActa(val,color,eqName,id){
     var html='<p style="color:'+color+';font-size:13px;font-weight:600;margin-bottom:8px">'+eqName+'</p>';
     html+='<div class="counter" style="margin-bottom:6px"><button class="counter-btn" id="'+id+'-dec">−</button><span class="counter-val" id="'+id+'-val" style="color:'+color+'">'+val+'</span><button class="counter-btn" id="'+id+'-inc">+</button></div>';
-    html+='<div class="tabla-banda">';
+    html+='<div class="tabla-banda" id="banda-tabla-'+id+'">';
     [[1,2,3,4,5,6,7,8],[9,10,11,12],[13,14,15,16]].forEach(function(fila){
       html+='<div class="banda-row">';
       fila.forEach(function(n){
@@ -1061,7 +1064,7 @@ function buildActa() {
     });
     html+='</div>';
     var expAuto=Math.floor(val/8), expReg=(w.expulsiones||[]).filter(function(x){return x.motivo==='fueras de banda';}).length;
-    if(expAuto>expReg) html+='<div style="background:rgba(255,61,87,0.15);border:1px solid rgba(255,61,87,0.3);border-radius:8px;padding:7px 10px;margin-top:8px"><p style="color:#ff3d57;font-size:12px;font-weight:600">⚠️ Expulsion pendiente de registrar</p></div>';
+    html+='<div id="banda-alerta-'+id+'" style="background:rgba(255,61,87,0.15);border:1px solid rgba(255,61,87,0.3);border-radius:8px;padding:7px 10px;margin-top:8px;display:'+(expAuto>expReg?'block':'none')+'"><p style="color:#ff3d57;font-size:12px;font-weight:600">⚠️ Expulsion pendiente</p></div>';
     return html;
   }
 
