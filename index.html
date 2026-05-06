@@ -707,8 +707,14 @@ function attachActaEvents(){
 
   function bindCounter(decId,incId,valId,key){
     var d=$(decId),i=$(incId);
-    if(d) d.addEventListener('click',function(){WIP[key]=Math.max(0,(WIP[key]||0)-1);saveWip(WIP);var el=$(valId);if(el)el.textContent=WIP[key];});
-    if(i) i.addEventListener('click',function(){WIP[key]=(WIP[key]||0)+1;saveWip(WIP);var el=$(valId);if(el)el.textContent=WIP[key];});
+    if(d) d.addEventListener('click',function(){
+      WIP[key]=Math.max(0,(WIP[key]||0)-1);saveWip(WIP);
+      if(key==='fuerasL'||key==='fuerasV'){render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+    });
+    if(i) i.addEventListener('click',function(){
+      WIP[key]=(WIP[key]||0)+1;saveWip(WIP);
+      if(key==='fuerasL'||key==='fuerasV'){render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+    });
   }
   bindCounter('pL-dec','pL-inc','pL-val','paradasL');
   bindCounter('pV-dec','pV-inc','pV-val','paradasV');
@@ -1241,9 +1247,9 @@ function buildStats() {
 function attachEvents() {
   // Breadcrumbs
   var bcHome=$('bc-home'), bcLiga=$('bc-liga'), bcTorneo=$('bc-torneo');
-  if(bcHome) bcHome.addEventListener('click',function(){VIEW={screen:'home',ligaId:null,torneoId:null};render();});
-  if(bcLiga) bcLiga.addEventListener('click',function(){VIEW.screen='liga';render();});
-  if(bcTorneo) bcTorneo.addEventListener('click',function(){VIEW.screen='torneo';render();});
+  if(bcHome) bcHome.addEventListener('click',function(){salvarWipActual();clearInterval(marcadorRefreshInterval);VIEW={screen:'home',ligaId:null,torneoId:null};render();});
+  if(bcLiga) bcLiga.addEventListener('click',function(){salvarWipActual();VIEW.screen='liga';render();});
+  if(bcTorneo) bcTorneo.addEventListener('click',function(){salvarWipActual();VIEW.screen='torneo';render();});
 
   // Modal close
   var ov=$('modal-overlay'), cl=$('btn-modal-close');
@@ -1255,6 +1261,7 @@ function attachEvents() {
   else if(VIEW.screen==='liga') attachLigaEvents();
   else if(VIEW.screen==='torneo') attachTorneoEvents();
   else if(VIEW.screen==='acta') attachActaEvents();
+  else if(VIEW.screen==='marcador') attachMarcadorEvents();
   else if(VIEW.screen==='equipos') attachEquiposEvents();
 
   // Modal events
