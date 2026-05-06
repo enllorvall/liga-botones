@@ -759,9 +759,16 @@ function buildMarcador() {
       liga_id: wip.ligaId
     };
   } else {
-    var completados = DB.partidos.filter(function(p){return p.completado;});
-    completados.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
-    ultimo = completados[0]||null;
+    // Buscar partido en curso (completado=false con goles o eventos)
+    var enCurso = DB.partidos.filter(function(p){return !p.completado && p.local_id && p.visitante_id;});
+    enCurso.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
+    if(enCurso.length) {
+      ultimo = enCurso[0];
+    } else {
+      var completados = DB.partidos.filter(function(p){return p.completado;});
+      completados.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
+      ultimo = completados[0]||null;
+    }
   }
 
   var s = CRON;
@@ -967,13 +974,22 @@ function buildConfig(){
     '<code style="display:block;background:#1a2438;border-radius:8px;padding:12px;color:#ffd600;font-size:13px">PEGA_AQUI_TU_ANON_KEY</code></div>';
 }
 
+// Guarda los valores actuales de los inputs del acta en WIP antes de navegar
+function salvarWipActual(){
+  if(VIEW.screen !== 'acta') return;
+  var campos = ['w-jornada','w-fecha','w-arbitro','w-notas','w-porteroL','w-porteroV'];
+  var keys   = ['jornada',  'fecha',  'arbitro',  'notas',  'porteroL',  'porteroV'];
+  campos.forEach(function(id,i){ var el=$(id); if(el) WIP[keys[i]]=el.value; });
+  saveWip(WIP);
+}
+
 // ── ATTACH EVENTS ─────────────────────────────────────────────────
 function attachEvents() {
   // Breadcrumbs
   var bcHome=$('bc-home'), bcLiga=$('bc-liga'), bcTorneo=$('bc-torneo');
-  if(bcHome) bcHome.addEventListener('click',function(){VIEW={screen:'home',ligaId:null,torneoId:null};render();});
-  if(bcLiga) bcLiga.addEventListener('click',function(){VIEW.screen='liga';render();});
-  if(bcTorneo) bcTorneo.addEventListener('click',function(){VIEW.screen='torneo';render();});
+  if(bcHome) bcHome.addEventListener('click',function(){salvarWipActual();VIEW={screen:'home',ligaId:null,torneoId:null};render();});
+  if(bcLiga) bcLiga.addEventListener('click',function(){salvarWipActual();VIEW.screen='liga';render();});
+  if(bcTorneo) bcTorneo.addEventListener('click',function(){salvarWipActual();VIEW.screen='torneo';render();});
 
   // Modal close
   var ov=$('modal-overlay'), cl=$('btn-modal-close');
@@ -1296,7 +1312,7 @@ function attachActaEvents(){
     var min=$('w-gol-min').value,autor=$('w-gol-autor').value,eq=$('w-gol-eq').value,tipo=$('w-gol-tipo').value;
     if(!min||!autor) return;
     WIP.goles=(WIP.goles||[]).concat([{id:uid(),minuto:min,autor:autor,equipo:eq,tipo:tipo}]);
-    saveWip(WIP); render();
+    saveWip(WIP); sincronizarEnCurso(); render();
   });
   var af=$('btn-add-falt-wip');
   if(af) af.addEventListener('click',function(){
@@ -1304,6 +1320,7 @@ function attachActaEvents(){
     if(!min||!jug) return;
     var t=(WIP.faltas||[]).filter(function(f){return f.jugador===jug&&f.equipo===eq;}).length===0?'amarilla':'roja';
     WIP.faltas=(WIP.faltas||[]).concat([{id:uid(),minuto:min,jugador:jug,equipo:eq,tarjeta:t}]);
+    sincronizarEnCurso();
     if(t==='roja') alert('🟥 Doble falta de '+jug+' - registra la expulsion');
     saveWip(WIP); render();
   });
@@ -1312,20 +1329,20 @@ function attachActaEvents(){
     var min=$('w-exp-min').value,jug=$('w-exp-jug').value,eq=$('w-exp-eq').value,mot=$('w-exp-mot').value;
     if(!min||!jug) return;
     WIP.expulsiones=(WIP.expulsiones||[]).concat([{id:uid(),minuto:min,jugador:jug,equipo:eq,motivo:mot}]);
-    saveWip(WIP); render();
+    saveWip(WIP); sincronizarEnCurso(); render();
   });
   var ac=$('btn-add-cam-wip');
   if(ac) ac.addEventListener('click',function(){
     var min=$('w-cam-min').value,eq=$('w-cam-eq').value,sale=$('w-cam-sale').value,entra=$('w-cam-entra').value;
     if(!min||!sale||!entra) return;
     WIP.cambios=(WIP.cambios||[]).concat([{id:uid(),minuto:min,equipo:eq,sale:sale,entra:entra}]);
-    saveWip(WIP); render();
+    saveWip(WIP); sincronizarEnCurso(); render();
   });
   document.querySelectorAll('.del-wip').forEach(function(btn){
     btn.addEventListener('click',function(){
       var tipo=this.dataset.tipo,id=this.dataset.id;
       WIP[tipo]=(WIP[tipo]||[]).filter(function(x){return x.id!==id;});
-      saveWip(WIP); render();
+      saveWip(WIP); sincronizarEnCurso(); render();
     });
   });
   var lim=$('btn-limpiar');
@@ -1337,6 +1354,34 @@ function attachActaEvents(){
     else VIEW.screen='home';
     render();
   });
+  // Sincroniza el estado actual del WIP a Supabase (partido en curso, completado=false)
+  // Esto permite que el marcador en otros dispositivos vea los cambios en tiempo real
+  function sincronizarEnCurso(){
+    if(!WIP.localId || !WIP.visitanteId) return;
+    var datos = {
+      local_id: WIP.localId, visitante_id: WIP.visitanteId,
+      goles_local: (WIP.goles||[]).filter(function(g){return g.equipo==='local';}).length,
+      goles_visitante: (WIP.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
+      goles: WIP.goles||[], faltas: WIP.faltas||[],
+      expulsiones: WIP.expulsiones||[], cambios: WIP.cambios||[],
+      fueras_local: WIP.fuerasL||0, fueras_visitante: WIP.fuerasV||0,
+      fecha: WIP.fecha, jornada: Number(WIP.jornada)||null,
+      arbitro: WIP.arbitro||'', notas: WIP.notas||'',
+      completado: false,
+      liga_id: WIP.ligaId||null, torneo_id: WIP.torneoId||null,
+      jornada_id: WIP.jornadaId||null
+    };
+    if(WIP.partidoId){
+      db.from('partidos').update(datos).eq('id', WIP.partidoId).then(function(){});
+    } else {
+      // Crear partido nuevo en curso y guardar su ID en WIP
+      WIP.partidoId = uid();
+      datos.id = WIP.partidoId;
+      saveWip(WIP);
+      db.from('partidos').insert(datos).then(function(){});
+    }
+  }
+
   var gb=$('btn-guardar-acta');
   if(gb) gb.addEventListener('click',async function(){
     if(!WIP.localId||!WIP.visitanteId){alert('Selecciona dos equipos.');return;}
