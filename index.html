@@ -696,7 +696,7 @@ function attachActaEvents(){
   if(re) re.addEventListener('click',cronReset);
   if(ex) ex.addEventListener('input',function(){CRON.extra=+this.value;});
 
-  function bindInp(id,key){ var el=$(id); if(el){el.addEventListener('input',function(){WIP[key]=this.value;saveWip(WIP);});} }
+  function bindInp(id,key){ var el=$(id); if(el){ el.value=WIP[key]||''; var fn=function(){WIP[key]=this.value;saveWip(WIP);}; el.addEventListener('input',fn); el.addEventListener('change',fn); el.addEventListener('blur',fn); } }
   function bindSel(id,key){ var el=$(id); if(el){el.addEventListener('change',function(){WIP[key]=this.value;saveWip(WIP);render();});} }
   bindInp('w-jornada','jornada'); bindInp('w-fecha','fecha');
   bindInp('w-arbitro','arbitro'); bindInp('w-notas','notas'); bindInp('w-arbitro','arbitro');
@@ -709,11 +709,11 @@ function attachActaEvents(){
     var d=$(decId),i=$(incId);
     if(d) d.addEventListener('click',function(){
       WIP[key]=Math.max(0,(WIP[key]||0)-1);saveWip(WIP);
-      if(key==='fuerasL'||key==='fuerasV'){render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+      if(key==='fuerasL'||key==='fuerasV'){salvarWipActual();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
     });
     if(i) i.addEventListener('click',function(){
       WIP[key]=(WIP[key]||0)+1;saveWip(WIP);
-      if(key==='fuerasL'||key==='fuerasV'){render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+      if(key==='fuerasL'||key==='fuerasV'){salvarWipActual();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
     });
   }
   bindCounter('pL-dec','pL-inc','pL-val','paradasL');
@@ -813,15 +813,15 @@ function attachActaEvents(){
 function cronTick(){
   CRON.seg++; CRON.min=Math.floor(CRON.seg/60); CRON.sec=CRON.seg%60;
   var limite=900+CRON.extra*60;
-  if(CRON.seg>=limite&&!cronAlertado){cronAlertado=true;CRON.alerta=true;render();return;}
+  if(CRON.seg>=limite&&!cronAlertado){cronAlertado=true;CRON.alerta=true;salvarWipActual();render();return;}
   var d=$('crono-display'), st=$('crono-status');
   if(d) d.textContent=pad(CRON.min)+':'+pad(CRON.sec);
   if(st){var minP=CRON.parte===1?CRON.min:15+CRON.min; st.textContent='Parte '+CRON.parte+' · min '+minP;}
 }
-function cronIniciar(){CRON.run=true;CRON.alerta=false;cronAlertado=false;clearInterval(cronInterval);cronInterval=setInterval(cronTick,1000);render();}
-function cronPausar(){CRON.run=false;clearInterval(cronInterval);render();}
-function cronSig2(){clearInterval(cronInterval);CRON.run=false;CRON.parte=2;CRON.seg=0;CRON.min=0;CRON.sec=0;CRON.extra=0;CRON.alerta=false;cronAlertado=false;render();}
-function cronFin(){clearInterval(cronInterval);CRON.run=false;CRON.fin=true;render();}
+function cronIniciar(){CRON.run=true;CRON.alerta=false;cronAlertado=false;clearInterval(cronInterval);cronInterval=setInterval(cronTick,1000);salvarWipActual();render();}
+function cronPausar(){CRON.run=false;clearInterval(cronInterval);salvarWipActual();render();}
+function cronSig2(){clearInterval(cronInterval);CRON.run=false;CRON.parte=2;CRON.seg=0;CRON.min=0;CRON.sec=0;CRON.extra=0;CRON.alerta=false;cronAlertado=false;salvarWipActual();render();}
+function cronFin(){clearInterval(cronInterval);CRON.run=false;CRON.fin=true;salvarWipActual();render();}
 function cronReset(){clearInterval(cronInterval);CRON.run=false;CRON.seg=0;CRON.min=0;CRON.sec=0;CRON.parte=1;CRON.fin=false;CRON.extra=0;CRON.alerta=false;cronAlertado=false;}
 
 // ── SUPABASE ──────────────────────────────────────────────────────
@@ -979,27 +979,20 @@ function attachMarcadorEvents(){
   if(cr) cr.addEventListener('click',cronReset);
   if(ex) ex.addEventListener('input',function(){CRON.extra=+this.value;});
 
-  // Botón actualizar: recarga datos y reconstruye SOLO el marcador
   var br=$('btn-marcador-refresh');
-  if(br) br.addEventListener('click',function(){ refrescarMarcador(); });
-
-  // Breadcrumb al home
-  var bcH=$('bc-home');
-  if(bcH) bcH.addEventListener('click',function(){
-    clearInterval(marcadorRefreshInterval);
-    VIEW={screen:'home',ligaId:null,torneoId:null};
-    render();
+  if(br) br.addEventListener('click',function(){
+    cargar().then(function(){ if(VIEW.screen==='marcador') render(); });
   });
 
-  // Auto-refresco cada 10 segundos
+  // Auto-refresco cada 15 segundos
   clearInterval(marcadorRefreshInterval);
   marcadorRefreshInterval = setInterval(function(){
-    if(VIEW.screen === 'marcador'){
-      refrescarMarcador();
+    if(VIEW.screen==='marcador'){
+      cargar().then(function(){ if(VIEW.screen==='marcador') render(); });
     } else {
       clearInterval(marcadorRefreshInterval);
     }
-  }, 10000);
+  }, 15000);
 }
 
 function sincronizarEnCurso(){
@@ -1276,6 +1269,8 @@ function attachHomeEvents(){
   if(bnl) bnl.addEventListener('click',function(){MODAL={type:'nueva-liga',data:{},editando:false};render();});
   if(bnt) bnt.addEventListener('click',function(){MODAL={type:'nuevo-torneo',data:{},editando:false};render();});
   if(bas) bas.addEventListener('click',function(){WIP=newWip();saveWip(WIP);VIEW.screen='acta';render();});
+  var bmc=$('btn-marcador');
+  if(bmc) bmc.addEventListener('click',function(){VIEW.screen='marcador';render();});
   if(beq) beq.addEventListener('click',function(){VIEW.screen='equipos';render();});
   if(bst) bst.addEventListener('click',function(){VIEW.screen='stats';render();});
   // Abrir liga
