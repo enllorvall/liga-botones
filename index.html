@@ -1209,92 +1209,94 @@ function buildEquipos() {
 }
 
 function buildStats() {
-  var c=DB.partidos.filter(function(p){return p.completado;});
-  var bc='<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Stats</span></div>';
-  if(!c.length) return bc+'<div class="card"><p style="color:#6b7a99;text-align:center;padding:40px">Sin datos todavia.</p></div>';
+  var c = DB.partidos.filter(function(p){return p.completado;});
+  var bc = '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Stats</span></div>';
+  if(!c.length) return bc + '<div class="card"><p style="color:#6b7a99;text-align:center;padding:40px">Sin datos todavia.</p></div>';
 
-  // Goleadores
-  var gM={};
-  c.forEach(function(p){(p.goles||[]).filter(function(g){return g.tipo!=='autopista';}).forEach(function(g){gM[g.autor]=(gM[g.autor]||0)+1;});});
-  var tG=Object.entries(gM).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
-
-  // Porteros
-  var pM={};
+  var gM={}, pM={}, faltaM={}, fuM={}, partM={};
   c.forEach(function(p){
-    if(p.portero_local&&p.paradas_local) pM[p.portero_local]=(pM[p.portero_local]||0)+(p.paradas_local||0);
-    if(p.portero_visitante&&p.paradas_visitante) pM[p.portero_visitante]=(pM[p.portero_visitante]||0)+(p.paradas_visitante||0);
+    // Goles
+    (p.goles||[]).forEach(function(g){
+      if(g.tipo!=='autopista') gM[g.autor] = (gM[g.autor]||0) + 1;
+    });
+    // Porteros
+    if(p.portero_local) pM[p.portero_local] = (pM[p.portero_local]||0) + (p.paradas_local||0);
+    if(p.portero_visitante) pM[p.portero_visitante] = (pM[p.portero_visitante]||0) + (p.paradas_visitante||0);
+    // Faltas
+    (p.faltas||[]).forEach(function(f){ faltaM[f.jugador] = (faltaM[f.jugador]||0) + 1; });
+    // Fueras de banda
+    if(p.local_id){
+      fuM[p.local_id] = (fuM[p.local_id]||0) + (+(p.fueras_local)||0);
+      partM[p.local_id] = (partM[p.local_id]||0) + 1;
+    }
+    if(p.visitante_id){
+      fuM[p.visitante_id] = (fuM[p.visitante_id]||0) + (+(p.fueras_visitante)||0);
+      partM[p.visitante_id] = (partM[p.visitante_id]||0) + 1;
+    }
   });
-  var tP=Object.entries(pM).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
 
-  // Faltas
-  var fM={};
-  c.forEach(function(p){(p.faltas||[]).forEach(function(f){fM[f.jugador]=(fM[f.jugador]||0)+1;});});
-  var tF=Object.entries(fM).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var tG = Object.entries(gM).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var tP = Object.entries(pM).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var tF = Object.entries(faltaM).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var tFu = Object.entries(fuM).sort(function(a,b){return b[1]-a[1];});
 
-  // Fueras de banda por equipo
-  var fuM={}, partM={};
-  c.forEach(function(p){
-    var fl=+(p.fueras_local)||0, fv=+(p.fueras_visitante)||0;
-    if(p.local_id){ fuM[p.local_id]=(fuM[p.local_id]||0)+fl; partM[p.local_id]=(partM[p.local_id]||0)+1; }
-    if(p.visitante_id){ fuM[p.visitante_id]=(fuM[p.visitante_id]||0)+fv; partM[p.visitante_id]=(partM[p.visitante_id]||0)+1; }
-  });
-  var tFu=Object.entries(fuM).sort(function(a,b){return b[1]-a[1];});
+  function bar(val, mx, color) {
+    return '<div style="background:#1a2438;border-radius:4px;height:5px;margin-top:3px">' +
+      '<div style="background:'+color+';border-radius:4px;height:5px;width:'+(mx>0?(val/mx*100):0)+'%"></div></div>';
+  }
 
-  function rl(data,color,unit){
+  function rl(data, color, unit) {
     if(!data.length) return '<p style="color:#6b7a99;font-size:13px">Sin datos</p>';
-    var mx=data[0][1]||1;
-    return data.map(function(d,i){
-      return '<div style="margin-bottom:8px">'+
-        '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'+
-        '<span style="font-size:13px;font-weight:600">'+(i===0?'1':i===1?'2':i===2?'3':'')+' '+d[0]+'</span>'+
-        '<span style="color:'+color+';font-weight:700;font-size:14px">'+d[1]+unit+'</span></div>'+
-        '<div style="background:#1a2438;border-radius:4px;height:5px">'+
-        '<div style="background:'+color+';border-radius:4px;height:5px;width:'+(d[1]/mx*100)+'%"></div></div></div>';
+    var mx = data[0][1] || 1;
+    return data.map(function(d, i) {
+      return '<div style="margin-bottom:8px">' +
+        '<div style="display:flex;justify-content:space-between">' +
+        '<span style="font-size:13px;font-weight:600">' + (i<3?'<b>'+(i+1)+'</b> ':'') + d[0] + '</span>' +
+        '<span style="color:'+color+';font-weight:700">' + d[1] + unit + '</span></div>' +
+        bar(d[1], mx, color) + '</div>';
     }).join('');
   }
 
-  var fuerasHtml = '<div class="card"><p class="section-title">Fueras de banda por equipo</p><p style="color:#6b7a99;font-size:13px">Sin datos de fueras aun.</p></div>';
-  if(tFu.length>0){
-    var mxF=tFu[0][1]||1;
-    fuerasHtml = '<div class="card"><p class="section-title">Fueras de banda por equipo</p>'+
-      tFu.map(function(d){
-        var pts=partM[d[0]]||1;
-        var prom=(d[1]/pts).toFixed(1);
-        return '<div style="margin-bottom:10px">'+
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
-          '<span style="font-size:13px;font-weight:600">'+nEq(d[0])+'</span>'+
-          '<div style="display:flex;gap:10px;align-items:center">'+
-          '<span style="color:#ff9800;font-weight:700;font-size:15px">'+d[1]+' total</span>'+
-          '<span style="color:#6b7a99;font-size:12px">'+prom+' por partido</span>'+
-          '</div></div>'+
-          '<div style="background:#1a2438;border-radius:4px;height:6px">'+
-          '<div style="background:#ff9800;border-radius:4px;height:6px;width:'+(d[1]/mxF*100)+'%"></div></div></div>';
-      }).join('')+'</div>';
+  // Fueras de banda section
+  var fuerasSection;
+  if(!tFu.length) {
+    fuerasSection = '<div class="card"><p class="section-title">Fueras de banda por equipo</p><p style="color:#6b7a99;font-size:13px">Sin datos de fueras registradas.</p></div>';
+  } else {
+    var mxFu = tFu[0][1] || 1;
+    var filas = tFu.map(function(d) {
+      var total = d[1];
+      var pts = partM[d[0]] || 1;
+      var prom = (total / pts).toFixed(1);
+      return '<div style="margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:13px;font-weight:600">' + nEq(d[0]) + '</span>' +
+        '<div><span style="color:#ff9800;font-weight:700;font-size:14px">' + total + ' total</span>' +
+        '<span style="color:#6b7a99;font-size:12px;margin-left:8px">' + prom + '/partido</span></div></div>' +
+        bar(total, mxFu, '#ff9800') + '</div>';
+    }).join('');
+    fuerasSection = '<div class="card"><p class="section-title">Fueras de banda por equipo</p>' + filas + '</div>';
   }
 
-  var resumen=[
-    ['Partidos',c.length],
-    ['Goles',c.reduce(function(s,p){return s+p.goles_local+p.goles_visitante;},0)],
-    ['Faltas',c.reduce(function(s,p){return s+(p.faltas||[]).length;},0)],
-    ['Expulsiones',c.reduce(function(s,p){return s+(p.expulsiones||[]).length;},0)]
-  ];
-
-  return bc+'<div class="flex-col">'+
-    '<h2 class="h2">Estadisticas globales</h2>'+
-    '<div class="grid2">'+
-    '<div class="card"><p class="section-title">Goleadores</p>'+rl(tG,'#00e676',' goles')+'</div>'+
-    '<div class="card"><p class="section-title">Porteros</p>'+rl(tP,'#4fc3f7',' paradas')+'</div>'+
-    '</div>'+
-    '<div class="card"><p class="section-title">Mas faltas</p>'+rl(tF,'#ffea00',' faltas')+'</div>'+
-    fuerasHtml+
-    '<div class="card"><p class="section-title">Resumen de la temporada</p>'+
-    '<div class="grid2">'+
-    resumen.map(function(r){
-      return '<div class="card-sm" style="text-align:center">'+
-        '<div style="font-family:Oswald,sans-serif;font-size:26px;font-weight:700;color:#00e676;margin-top:4px">'+r[1]+'</div>'+
-        '<div style="color:#6b7a99;font-size:12px;margin-top:3px">'+r[0]+'</div></div>';
-    }).join('')+
-    '</div></div>'+
+  return bc + '<div class="flex-col">' +
+    '<h2 class="h2">Estadisticas globales</h2>' +
+    '<div class="grid2">' +
+    '<div class="card"><p class="section-title">Goleadores</p>' + rl(tG,'#00e676',' goles') + '</div>' +
+    '<div class="card"><p class="section-title">Porteros</p>' + rl(tP,'#4fc3f7',' paradas') + '</div>' +
+    '</div>' +
+    '<div class="card"><p class="section-title">Mas faltas</p>' + rl(tF,'#ffea00',' faltas') + '</div>' +
+    fuerasSection +
+    '<div class="card"><p class="section-title">Resumen de la temporada</p>' +
+    '<div class="grid2">' +
+    [['Partidos',c.length],
+     ['Goles',c.reduce(function(s,p){return s+(p.goles_local||0)+(p.goles_visitante||0);},0)],
+     ['Faltas',c.reduce(function(s,p){return s+(p.faltas||[]).length;},0)],
+     ['Expulsiones',c.reduce(function(s,p){return s+(p.expulsiones||[]).length;},0)]
+    ].map(function(r){
+      return '<div class="card-sm" style="text-align:center">' +
+        '<div style="font-family:Oswald,sans-serif;font-size:26px;font-weight:700;color:#00e676;margin-top:4px">' + r[1] + '</div>' +
+        '<div style="color:#6b7a99;font-size:12px;margin-top:3px">' + r[0] + '</div></div>';
+    }).join('') +
+    '</div></div>' +
     '</div>';
 }
 
