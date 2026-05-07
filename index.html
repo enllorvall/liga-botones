@@ -1234,8 +1234,9 @@ function buildStats() {
   // Fueras de banda por equipo
   var fuM={}, partM={};
   c.forEach(function(p){
-    if(p.local_id){ fuM[p.local_id]=(fuM[p.local_id]||0)+(p.fueras_local||0); partM[p.local_id]=(partM[p.local_id]||0)+1; }
-    if(p.visitante_id){ fuM[p.visitante_id]=(fuM[p.visitante_id]||0)+(p.fueras_visitante||0); partM[p.visitante_id]=(partM[p.visitante_id]||0)+1; }
+    var fl=+(p.fueras_local)||0, fv=+(p.fueras_visitante)||0;
+    if(p.local_id){ fuM[p.local_id]=(fuM[p.local_id]||0)+fl; partM[p.local_id]=(partM[p.local_id]||0)+1; }
+    if(p.visitante_id){ fuM[p.visitante_id]=(fuM[p.visitante_id]||0)+fv; partM[p.visitante_id]=(partM[p.visitante_id]||0)+1; }
   });
   var tFu=Object.entries(fuM).sort(function(a,b){return b[1]-a[1];});
 
@@ -1252,8 +1253,8 @@ function buildStats() {
     }).join('');
   }
 
-  var fuerasHtml = '';
-  if(tFu.length){
+  var fuerasHtml = '<div class="card"><p class="section-title">Fueras de banda por equipo</p><p style="color:#6b7a99;font-size:13px">Sin datos de fueras aun.</p></div>';
+  if(tFu.length>0){
     var mxF=tFu[0][1]||1;
     fuerasHtml = '<div class="card"><p class="section-title">Fueras de banda por equipo</p>'+
       tFu.map(function(d){
