@@ -1369,6 +1369,49 @@ function buildStats() {
         }).join('') + '</div>';
     })() +
 
+    // Goles por franja de minutos
+    (function(){
+      var franjas = [
+        {label:'1-5',   min:1,  max:5},
+        {label:'6-10',  min:6,  max:10},
+        {label:'11-15', min:11, max:15},
+        {label:'16-20', min:16, max:20},
+        {label:'21-25', min:21, max:25},
+        {label:'26-30', min:26, max:30},
+        {label:'+30',   min:31, max:999},
+      ];
+      var counts = franjas.map(function(){ return 0; });
+      var totalGoles = 0;
+      c.forEach(function(p){
+        (p.goles||[]).forEach(function(g){
+          var min = +g.minuto||0;
+          franjas.forEach(function(f,i){
+            if(min >= f.min && min <= f.max) counts[i]++;
+          });
+          totalGoles++;
+        });
+      });
+      if(!totalGoles) return '';
+      var mx = Math.max.apply(null, counts) || 1;
+      var barras = franjas.map(function(f,i){
+        var pct = Math.round(counts[i]/totalGoles*100);
+        var altura = Math.round(counts[i]/mx*100);
+        return '<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:6px">' +
+          '<span style="color:#00e676;font-weight:700;font-size:13px">' + (counts[i]||'') + '</span>' +
+          '<div style="width:100%;background:#1a2438;border-radius:6px 6px 0 0;position:relative;height:80px;display:flex;align-items:flex-end">' +
+          '<div style="width:100%;background:linear-gradient(to top,#00e676,#00b359);border-radius:6px 6px 0 0;height:' + altura + '%;transition:height .3s;min-height:' + (counts[i]>0?'4':'0') + 'px"></div>' +
+          '</div>' +
+          '<span style="color:#6b7a99;font-size:11px;font-weight:600">' + f.label + '</span>' +
+          (pct?'<span style="color:#6b7a99;font-size:10px">' + pct + '%</span>':'<span style="font-size:10px"> </span>') +
+          '</div>';
+      }).join('');
+      return '<div class="card"><p class="section-title">⏱ Goles por franja de minutos</p>' +
+        '<div style="display:flex;gap:6px;align-items:flex-end;padding:8px 0 4px">' + barras + '</div>' +
+        '<div style="display:flex;justify-content:center;margin-top:6px">' +
+        '<span style="color:#6b7a99;font-size:12px">Total: ' + totalGoles + ' goles en ' + c.length + ' partidos · ' + (totalGoles/c.length).toFixed(1) + ' goles/partido</span>' +
+        '</div></div>';
+    })() +
+
     '<div class="card"><p class="section-title">Resumen de la temporada</p>' +
     '<div class="grid2">' +
     [['Partidos',c.length],
