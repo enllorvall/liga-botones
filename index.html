@@ -879,7 +879,7 @@ async function cargar(){
       db.from('jugadores').select('*').order('created_at'),
       db.from('ligas').select('*').order('created_at'),
       db.from('torneos').select('*').order('created_at'),
-      db.from('jornadas').select('*').order('número'),
+      db.from('jornadas').select('*').order('numero'),
       db.from('partidos').select('*').order('created_at')
     ]);
     if(re.error) throw re.error;
