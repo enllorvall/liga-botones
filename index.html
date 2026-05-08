@@ -117,7 +117,7 @@ var CRON = { seg:0, min:0, sec:0, parte:1, run:false, fin:false, extra:0, alerta
 var cronInterval = null, cronAlertado = false;
 var WIP = loadWip() || newWip();
 
-function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",árbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
+function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function pad(n){ return String(n).padStart(2,"0"); }
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -558,7 +558,7 @@ function buildModalPartido() {
     (esModoÁrbitro()?'<button class="btn btn-red" id="btn-modal-del">Eliminar</button>':'')+
     '<button class="btn btn-ghost" id="btn-modal-close">X</button>'+
     '</div></div>'+
-    '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">'+(p.fecha||'')+(p.árbitro?' - Árbitro: '+p.árbitro:'')+'</p>'+
+    '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">'+(p.fecha||'')+(p.arbitro?' - Árbitro: '+p.arbitro:'')+'</p>'+
     marcador+porteros+contadores+
     '<p class="section-title">Goles</p>'+(!(p.goles&&p.goles.length)?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">Sin goles</p>':'')+evRow(p.goles,'0,230,118','goles')+fGol+
     '<p class="section-title" style="margin-top:10px">Faltas</p>'+(!(p.faltas&&p.faltas.length)?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">Sin faltas</p>':'')+evRow(p.faltas,'255,234,0','faltas')+fFalta+
@@ -743,7 +743,7 @@ function attachActaEvents(){
   function bindInp(id,key){ var el=$(id); if(el){ el.value=WIP[key]||''; var fn=function(){WIP[key]=this.value;saveWip(WIP);}; el.addEventListener('input',fn); el.addEventListener('change',fn); el.addEventListener('blur',fn); } }
   function bindSel(id,key){ var el=$(id); if(el){el.addEventListener('change',function(){WIP[key]=this.value;saveWip(WIP);render();});} }
   bindInp('w-jornada','jornada'); bindInp('w-fecha','fecha');
-  bindInp('w-árbitro','árbitro'); bindInp('w-notas','notas'); bindInp('w-árbitro','árbitro');
+  bindInp('w-árbitro','arbitro'); bindInp('w-notas','notas'); bindInp('w-árbitro','arbitro');
   bindInp('w-porteroL','porteroL'); bindInp('w-porteroV','porteroV');
   // Solo mostrar selects de equipo si no vienen prefijados del calendario
   if(!WIP.localId) bindSel('w-local','localId');
@@ -818,9 +818,9 @@ function attachActaEvents(){
     var partido={
       id: WIP.partidoId||uid(),
       jornada: Number(WIP.jornada)||null,
-      fecha: WIP.fecha, árbitro: WIP.árbitro||'',
+      fecha: WIP.fecha, arbitro: WIP.arbitro||'',
       local_id:WIP.localId, visitante_id:WIP.visitanteId,
-      árbitro:WIP.árbitro||'', portero_local:WIP.porteroL, portero_visitante:WIP.porteroV,
+      arbitro:WIP.arbitro||'', portero_local:WIP.porteroL, portero_visitante:WIP.porteroV,
       paradas_local:WIP.paradasL, paradas_visitante:WIP.paradasV,
       fueras_local:WIP.fuerasL, fueras_visitante:WIP.fuerasV,
       goles:(WIP.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
@@ -943,7 +943,7 @@ function imprimirActa(p){
   var SEC=function(t){return '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#666;border-bottom:1px solid #ddd;padding-bottom:3px;margin:12px 0 7px;font-weight:600">'+t+'</div>';};
   var html='<div style="display:flex;justify-content:space-between;border-bottom:3px solid #111;padding-bottom:10px;margin-bottom:14px">' +
     '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;letter-spacing:2px">LIGA DE BOTONES</div>' +
-    '<div style="font-size:12px;color:#555;margin-top:3px">'+( p.jornada_nombre||('Jornada '+p.jornada))+' - '+p.fecha+(p.árbitro?' - Árbitro: '+p.árbitro:'')+'</div></div>' +
+    '<div style="font-size:12px;color:#555;margin-top:3px">'+( p.jornada_nombre||('Jornada '+p.jornada))+' - '+p.fecha+(p.arbitro?' - Árbitro: '+p.arbitro:'')+'</div></div>' +
     '<div style="font-size:11px;color:#999">Acta oficial</div></div>';
   html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid #222">' +
     '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nL+'</div><div style="font-size:11px;color:#666;margin-top:2px">LOCAL</div>'+(p.portero_local?'<div style="font-size:12px;color:#444;margin-top:4px">'+p.portero_local+'</div>':'')+'</div>' +
@@ -1051,7 +1051,7 @@ function sincronizarEnCurso(){
     goles_visitante:(WIP.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
     goles:WIP.goles||[],faltas:WIP.faltas||[],expulsiones:WIP.expulsiones||[],cambios:WIP.cambios||[],
     fueras_local:WIP.fuerasL||0,fueras_visitante:WIP.fuerasV||0,
-    fecha:WIP.fecha,jornada:Number(WIP.jornada)||null,árbitro:WIP.árbitro||'',notas:WIP.notas||'',
+    fecha:WIP.fecha,jornada:Number(WIP.jornada)||null,arbitro:WIP.arbitro||'',notas:WIP.notas||'',
     completado:false,liga_id:WIP.ligaId||null,torneo_id:WIP.torneoId||null,jornada_id:WIP.jornadaId||null};
   if(WIP.partidoId){db.from('partidos').update(datos).eq('id',WIP.partidoId).then(function(){});}
   else{WIP.partidoId=uid();datos.id=WIP.partidoId;saveWip(WIP);db.from('partidos').insert(datos).then(function(){});}
@@ -1060,7 +1060,7 @@ function sincronizarEnCurso(){
 function salvarWipActual(){
   if(VIEW.screen!=='acta') return;
   ['w-jornada','w-fecha','w-árbitro','w-notas','w-porteroL','w-porteroV'].forEach(function(id,i){
-    var el=$(id),keys=['jornada','fecha','árbitro','notas','porteroL','porteroV'];
+    var el=$(id),keys=['jornada','fecha','arbitro','notas','porteroL','porteroV'];
     if(el) WIP[keys[i]]=el.value;
   });
   saveWip(WIP);
@@ -1338,7 +1338,7 @@ function buildStats() {
     // Árbitros
     (function(){
       var aM = {};
-      c.forEach(function(p){ if(p.árbitro && p.árbitro.trim()) aM[p.árbitro.trim()] = (aM[p.árbitro.trim()]||0) + 1; });
+      c.forEach(function(p){ if(p.arbitro && p.arbitro.trim()) aM[p.arbitro.trim()] = (aM[p.arbitro.trim()]||0) + 1; });
       var tA = Object.entries(aM).sort(function(a,b){return b[1]-a[1];});
       if(!tA.length) return '';
       var mx = tA[0][1]||1;
