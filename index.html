@@ -258,38 +258,45 @@ function buildHome() {
   var sueltos = DB.partidos.filter(function(p){return !p.liga_id&&!p.torneo_id&&p.completado;});
 
   return '<div class="flex-col">' +
+
+    // Pestañas superiores: Marcador, Equipos, Estadísticas
+    '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
+    '<button class="btn btn-ghost" id="btn-marcador" style="flex:1;min-width:120px">📺 Marcador</button>' +
+    '<button class="btn btn-ghost" id="btn-equipos" style="flex:1;min-width:120px">👕 Equipos</button>' +
+    '<button class="btn btn-ghost" id="btn-stats-global" style="flex:1;min-width:120px">📊 Estadisticas</button>' +
+    '</div>' +
+
+    '<div style="height:1px;background:#1e2d47;margin:4px 0 16px"></div>' +
+
     // Ligas
-    '<div>' +
+    '<div style="margin-bottom:28px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
     '<h2 class="h2">🏆 Ligas</h2>' +
     '<button class="btn btn-green" id="btn-nueva-liga">+ Nueva liga</button>' +
     '</div>' + ligasHtml + '</div>' +
+
     // Torneos
-    '<div>' +
+    '<div style="margin-bottom:28px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
     '<h2 class="h2">🥊 Torneos</h2>' +
     '<button class="btn btn-gold" id="btn-nuevo-torneo">+ Nuevo torneo</button>' +
     '</div>' + torneosHtml + '</div>' +
-    // Partido Amistoso (acta suelta)
+
+    // Partido Amistoso
     '<div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-    '<h2 class="h2">📋 Partido Amistoso (acta suelta)</h2>' +
+    '<h2 class="h2">📋 Partido Amistoso</h2>' +
     '<button class="btn btn-ghost" id="btn-acta-suelta">+ Nuevo amistoso</button>' +
     '</div>' +
     (sueltos.length?sueltos.slice(0,5).map(function(p){
       return '<div class="card-sm" style="cursor:pointer;margin-bottom:8px" data-pid="'+p.id+'">' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<span style="color:#6b7a99;font-size:12px">'+p.fecha+' · J'+p.jornada+'</span>' +
-        '<div style="font-family:\'Oswald\',sans-serif;font-size:18px;font-weight:700;color:#00e676">'+p.goles_local+' – '+p.goles_visitante+'</div></div>' +
+        '<div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:700;color:#00e676">'+p.goles_local+' – '+p.goles_visitante+'</div></div>' +
         '<div style="font-weight:600;margin-top:4px">'+nEq(p.local_id)+' vs '+nEq(p.visitante_id)+'</div></div>';
     }).join(''):'<p style="color:#6b7a99;font-size:13px;padding:10px 0">Sin partidos amistosos.</p>') +
     '</div>' +
-    // Gestion equipos
-    '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-    '<button class="btn btn-ghost" id="btn-marcador">📺 Marcador en vivo</button>' +
-    '<button class="btn btn-ghost" id="btn-equipos">👕 Gestionar equipos</button>' +
-    '<button class="btn btn-ghost" id="btn-stats-global">📊 Estadisticas</button>' +
-    '</div>' +
+
     '</div>';
 }
 
