@@ -83,6 +83,32 @@ var CONFIGURED = SB_URL.indexOf("PEGA_AQUI") === -1;
 var db = CONFIGURED ? supabase.createClient(SB_URL, SB_KEY) : null;
 var WIP_KEY = "lb_wip";
 
+// ── SEGURIDAD PIN ─────────────────────────────────────────────────
+var PIN_CORRECTO = '8736';
+var PIN_KEY = 'lb_arbitro_auth';
+
+function esModoArbitro() {
+  try {
+    var data = JSON.parse(localStorage.getItem(PIN_KEY)||'null');
+    if(!data) return false;
+    // Caduca a los 30 días
+    if(Date.now() - data.ts > 30*24*60*60*1000) { localStorage.removeItem(PIN_KEY); return false; }
+    return data.pin === PIN_CORRECTO;
+  } catch(e){ return false; }
+}
+
+function activarModoArbitro(pin) {
+  if(pin === PIN_CORRECTO) {
+    localStorage.setItem(PIN_KEY, JSON.stringify({pin:pin, ts:Date.now()}));
+    return true;
+  }
+  return false;
+}
+
+function cerrarSesionArbitro() {
+  localStorage.removeItem(PIN_KEY);
+}
+
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────
 var DB = { equipos:[], ligas:[], torneos:[], jornadas:[], partidos:[] };
 var VIEW = { screen:'home', ligaId:null, torneoId:null, jornadaId:null };
@@ -194,11 +220,17 @@ function render() {
 function buildPage() {
   if(!CONFIGURED) return buildConfig();
   var s = VIEW;
+  var arbitro = esModoArbitro();
   var header = '<div style="text-align:center;margin-bottom:14px">' +
     '<h1 class="h1">⚽ LIGA DE BOTONES</h1>' +
-    '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:5px">' +
+    '<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:5px;flex-wrap:wrap">' +
+    '<div style="display:flex;align-items:center;gap:6px">' +
     '<div style="width:7px;height:7px;border-radius:50%;background:#00e676;box-shadow:0 0 6px #00e676"></div>' +
-    '<span style="color:#6b7a99;font-size:12px">Conectado</span></div></div>';
+    '<span style="color:#6b7a99;font-size:12px">Conectado</span></div>' +
+    (arbitro
+      ? '<div style="display:flex;align-items:center;gap:6px"><span style="background:rgba(255,214,0,0.15);color:#ffd600;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600">🔓 Modo árbitro</span><button class="btn btn-ghost" id="btn-cerrar-sesion" style="font-size:11px;padding:3px 8px">Cerrar sesión</button></div>'
+      : '<button class="btn btn-ghost" id="btn-login-pin" style="font-size:11px;padding:3px 10px">🔒 Árbitro</button>') +
+    '</div></div>';
 
   var content = '';
   if(s.screen === 'home')      content = buildHome();
@@ -220,6 +252,7 @@ function buildPage() {
 
 // ── HOME ──────────────────────────────────────────────────────────
 function buildHome() {
+  var arbitro = esModoArbitro();
   var ligasHtml = '';
   if(!DB.ligas.length) {
     ligasHtml = '<p style="color:#6b7a99;font-size:13px;padding:10px 0">No hay ligas creadas aun.</p>';
@@ -272,21 +305,21 @@ function buildHome() {
     '<div style="margin-bottom:28px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
     '<h2 class="h2">🏆 Ligas</h2>' +
-    '<button class="btn btn-green" id="btn-nueva-liga">+ Nueva liga</button>' +
+    (arbitro?'<button class="btn btn-green" id="btn-nueva-liga">+ Nueva liga</button>':'') +
     '</div>' + ligasHtml + '</div>' +
 
     // Torneos
     '<div style="margin-bottom:28px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
     '<h2 class="h2">🥊 Torneos</h2>' +
-    '<button class="btn btn-gold" id="btn-nuevo-torneo">+ Nuevo torneo</button>' +
+    (arbitro?'<button class="btn btn-gold" id="btn-nuevo-torneo">+ Nuevo torneo</button>':'') +
     '</div>' + torneosHtml + '</div>' +
 
     // Partido Amistoso
     '<div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
     '<h2 class="h2">📋 Partido Amistoso</h2>' +
-    '<button class="btn btn-ghost" id="btn-acta-suelta">+ Nuevo amistoso</button>' +
+    (arbitro?'<button class="btn btn-ghost" id="btn-acta-suelta">+ Nuevo amistoso</button>':'') +
     '</div>' +
     (sueltos.length?sueltos.slice(0,5).map(function(p){
       return '<div class="card-sm" style="cursor:pointer;margin-bottom:8px" data-pid="'+p.id+'">' +
@@ -302,6 +335,7 @@ function buildHome() {
 
 // ── PANTALLA LIGA ─────────────────────────────────────────────────
 function buildLiga() {
+  var arbitro = esModoArbitro();
   var liga = getLiga(VIEW.ligaId);
   if(!liga) return '<p style="color:#ff3d57">Liga no encontrada.</p>';
   var eqSet={};DB.partidos.filter(function(p){return p.liga_id===liga.id;}).forEach(function(p){eqSet[p.local_id]=true;eqSet[p.visitante_id]=true;});var eqIds=Object.keys(eqSet);
@@ -360,7 +394,7 @@ function buildLiga() {
     });
   }
 
-  var btn_eliminar = '<button class="btn btn-red" id="btn-eliminar-liga" style="font-size:12px;padding:6px 12px">🗑 Eliminar liga</button>';
+  var btn_eliminar = arbitro ? '<button class="btn btn-red" id="btn-eliminar-liga" style="font-size:12px;padding:6px 12px">🗑 Eliminar liga</button>' : '';
 
   return '<div>' +
     '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">'+liga.nombre+'</span></div>' +
@@ -515,12 +549,12 @@ function buildModalPartido() {
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap">'+
     '<h2 class="h2">'+(completado?'Acta':'Partido')+' '+(p.jornada_nombre||'')+(ed?' - Editando':'')+'</h2>'+
     '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
-    (!completado&&!ed?'<button class="btn btn-green" id="btn-ir-acta">Rellenar acta</button>':'')+
-    (completado&&!ed?'<button class="btn btn-gold" id="btn-modal-edit">Editar</button>':'')+
+    (!completado&&!ed&&esModoArbitro()?'<button class="btn btn-green" id="btn-ir-acta">Rellenar acta</button>':'')+
+    (completado&&!ed&&esModoArbitro()?'<button class="btn btn-gold" id="btn-modal-edit">Editar</button>':'')+
     (completado&&!ed?'<button class="btn btn-blue" id="btn-modal-pdf">PDF</button>':'')+
     (ed?'<button class="btn btn-green" id="btn-modal-save">Guardar</button>':'')+
     (ed?'<button class="btn btn-ghost" id="btn-modal-cancel">Cancelar</button>':'')+
-    '<button class="btn btn-red" id="btn-modal-del">Eliminar</button>'+
+    (esModoArbitro()?'<button class="btn btn-red" id="btn-modal-del">Eliminar</button>':'')+
     '<button class="btn btn-ghost" id="btn-modal-close">X</button>'+
     '</div></div>'+
     '<p style="color:#6b7a99;font-size:12px;margin-bottom:14px;text-align:center">'+(p.fecha||'')+(p.arbitro?' - Arbitro: '+p.arbitro:'')+'</p>'+
@@ -1204,7 +1238,7 @@ function buildEquipos() {
         '<span style="font-weight:600">'+e.nombre+'</span>' +
         (subtitle?'<span style="color:#6b7a99;font-size:11px">'+subtitle(e)+'</span>':'') +
         '</div>' +
-        (!e.liga_id&&!e.torneo_id?'<button class="btn btn-ghost del-eq" data-eid="'+e.id+'" style="padding:4px 8px;font-size:13px">🗑</button>':'') +
+        (!e.liga_id&&!e.torneo_id&&esModoArbitro()?'<button class="btn btn-ghost del-eq" data-eid="'+e.id+'" style="padding:4px 8px;font-size:13px">🗑</button>':'') +
         '</div>';
     }).join('');
   }
@@ -1215,7 +1249,7 @@ function buildEquipos() {
     '<div class="card"><p class="section-title">Añadir equipo</p>' +
     '<div style="display:flex;gap:10px;align-items:flex-end">' +
     '<div style="flex:1"><label class="label">Nombre</label><input type="text" id="eq-nombre" placeholder="Ej: Valencia CF" class="inp"/></div>' +
-    '<button class="btn btn-green" id="btn-add-eq">+ Añadir</button></div></div>' +
+    (esModoArbitro()?'<button class="btn btn-green" id="btn-add-eq">+ Añadir</button>':'')+'</div></div>' +
     '<div class="card"><p class="section-title">Equipos disponibles (sin asignar)</p>'+listaEqs(libres,null)+'</div>' +
     (enLiga.length?'<div class="card"><p class="section-title">Equipos en ligas</p>'+listaEqs(enLiga,function(e){var l=getLiga(e.liga_id);return l?'en '+l.nombre:'';})+'</div>':'') +
     (enTorneo.length?'<div class="card"><p class="section-title">Equipos en torneos</p>'+listaEqs(enTorneo,function(e){var t=getTorneo(e.torneo_id);return t?'en '+t.nombre:'';})+'</div>':'') +
@@ -1350,6 +1384,18 @@ function buildStats() {
 }
 
 function attachEvents() {
+  // PIN / sesión árbitro
+  var btnLogin=$('btn-login-pin'), btnCerrar=$('btn-cerrar-sesion');
+  if(btnLogin) btnLogin.addEventListener('click', function(){
+    var pin = window.prompt('Introduce el PIN de árbitro:');
+    if(pin===null) return;
+    if(activarModoArbitro(pin.trim())) { render(); }
+    else { alert('PIN incorrecto.'); }
+  });
+  if(btnCerrar) btnCerrar.addEventListener('click', function(){
+    if(window.confirm('¿Cerrar sesión de árbitro?')) { cerrarSesionArbitro(); render(); }
+  });
+
   // Breadcrumbs
   var bcHome=$('bc-home'), bcLiga=$('bc-liga'), bcTorneo=$('bc-torneo');
   if(bcHome) bcHome.addEventListener('click',function(){salvarWipActual();clearInterval(marcadorRefreshInterval);VIEW={screen:'home',ligaId:null,torneoId:null};render();});
@@ -1413,7 +1459,7 @@ function attachLigaEvents(){
     el.addEventListener('click',function(){
       var p=DB.partidos.find(function(x){return x.id===el.dataset.pid;});
       if(!p) return;
-      if(!p.completado) {
+      if(!p.completado && esModoArbitro()) {
         // Ir a rellenar el acta
         WIP=newWip();
         WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
@@ -1440,7 +1486,7 @@ function attachTorneoEvents(){
     el.addEventListener('click',function(){
       var p=DB.partidos.find(function(x){return x.id===el.dataset.pid;});
       if(!p) return;
-      if(!p.completado){
+      if(!p.completado && esModoArbitro()){
         WIP=newWip();
         WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
         WIP.torneoId=p.torneo_id; WIP.ligaId=p.liga_id;
