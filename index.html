@@ -995,7 +995,7 @@ function buildMarcador() {
   if(s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
   cronBtns += '<button class="btn btn-ghost" id="btn-pitido-final" title="Sonido final del partido" style="font-size:18px;padding:6px 10px">📣</button>';
   var bc='<div class="breadcrumb" style="display:flex;justify-content:space-between;align-items:center"><div><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div><button class="btn btn-ghost" id="btn-marcador-refresh" style="font-size:12px;padding:5px 10px">Actualizar</button></div>';
-  var bannerActa = wipOk ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" id="btn-volver-acta" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
+  var bannerActa = wipOk ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
   if(!ultimo) return bc+bannerActa+'<div style="text-align:center;padding:60px"><h2 class="h2">Marcador en directo</h2><p style="color:#6b7a99;margin-top:8px">Aparecerá cuando empieces un acta.</p></div>';
   var nL=nEq(ultimo.local_id),nV=nEq(ultimo.visitante_id),liga=ultimo.liga_id?getLiga(ultimo.liga_id):null;
   var goles=(ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
@@ -1064,6 +1064,8 @@ function sincronizarEnCurso(){
   if(WIP.partidoId){db.from('partidos').update(datos).eq('id',WIP.partidoId).then(function(){});}
   else{WIP.partidoId=uid();datos.id=WIP.partidoId;saveWip(WIP);db.from('partidos').insert(datos).then(function(){});}
 }
+
+function volverAlActa(){ VIEW.screen='acta'; render(); }
 
 function salvarWipActual(){
   if(VIEW.screen!=='acta') return;
@@ -1257,7 +1259,7 @@ function buildEquipos() {
   }
 
   var wipActivoEq = !!(WIP&&WIP.localId&&WIP.visitanteId);
-  var bannerActaEq = wipActivoEq ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" id="btn-volver-acta" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
+  var bannerActaEq = wipActivoEq ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
   return '<div class="flex-col">' +
     '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Equipos</span></div>' +
     bannerActaEq +
@@ -1276,7 +1278,7 @@ function buildStats() {
   var c = DB.partidos.filter(function(p){return p.completado;});
   var bc = '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Estadísticas</span></div>';
   var wipActivo = !!(WIP&&WIP.localId&&WIP.visitanteId);
-  var bannerActa = wipActivo ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" id="btn-volver-acta" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
+  var bannerActa = wipActivo ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
   if(!c.length) return bc + bannerActa + '<div class="card"><p style="color:#6b7a99;text-align:center;padding:40px">Sin datos todavía.</p></div>';
 
   var gM={}, pM={}, faltaM={}, fuM={}, partM={};
@@ -1462,10 +1464,6 @@ function attachEvents() {
   if(bcHome) bcHome.addEventListener('click',function(){salvarWipActual();clearInterval(marcadorRefreshInterval);VIEW={screen:'home',ligaId:null,torneoId:null};render();});
   if(bcLiga) bcLiga.addEventListener('click',function(){salvarWipActual();VIEW.screen='liga';render();});
   if(bcTorneo) bcTorneo.addEventListener('click',function(){salvarWipActual();VIEW.screen='torneo';render();});
-
-  // Botón "Volver al acta" (aparece en marcador/stats/equipos cuando hay acta en curso)
-  var bva=$('btn-volver-acta');
-  if(bva) bva.addEventListener('click',function(){VIEW.screen='acta';render();});
 
   // Modal close
   var ov=$('modal-overlay'), cl=$('btn-modal-close');
