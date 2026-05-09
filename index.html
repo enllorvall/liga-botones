@@ -786,9 +786,9 @@ function attachActaEvents(){
   });
   var ax=$('btn-add-exp-wip');
   if(ax) ax.addEventListener('click',function(){
-    var min=$('w-exp-min').value,jug=$('w-exp-jug').value,eq=$('w-exp-eq').value,mot=$('w-exp-mot').value;
-    if(!min||!jug) return;
-    WIP.expulsiones=(WIP.expulsiones||[]).concat([{id:uid(),minuto:min,jugador:jug,equipo:eq,motivo:mot}]);
+    var jug=$('w-exp-jug').value,eq=$('w-exp-eq').value,mot=$('w-exp-mot').value;
+    if(!jug) return;
+    WIP.expulsiones=(WIP.expulsiones||[]).concat([{id:uid(),jugador:jug,equipo:eq,motivo:mot}]);
     saveWip(WIP); sincronizarEnCurso(); render();
   });
   var ac=$('btn-add-cam-wip');
@@ -1214,7 +1214,7 @@ function buildActa() {
 
     // Expulsiones
     '<div class="card"><p class="section-title">🚨 Expulsiones</p>' +
-    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-exp-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label><input type="text" id="w-exp-jug" placeholder="Nombre" class="inp"/></div></div>' +
+    '<div style="margin-bottom:8px"><label class="label">Jugador</label><input type="text" id="w-exp-jug" placeholder="Nombre" class="inp"/></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
     '<div><label class="label">Equipo</label><select id="w-exp-eq" class="sel">'+optsEq+'</select></div>' +
     '<div><label class="label">Motivo</label><select id="w-exp-mot" class="sel"><option value="doble falta">Doble falta</option><option value="fueras de banda">Clavados (fueras de banda)</option></select></div>' +
