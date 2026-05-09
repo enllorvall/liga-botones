@@ -1463,6 +1463,10 @@ function attachEvents() {
   if(bcLiga) bcLiga.addEventListener('click',function(){salvarWipActual();VIEW.screen='liga';render();});
   if(bcTorneo) bcTorneo.addEventListener('click',function(){salvarWipActual();VIEW.screen='torneo';render();});
 
+  // Botón "Volver al acta" (aparece en marcador/stats/equipos cuando hay acta en curso)
+  var bva=$('btn-volver-acta');
+  if(bva) bva.addEventListener('click',function(){VIEW.screen='acta';render();});
+
   // Modal close
   var ov=$('modal-overlay'), cl=$('btn-modal-close');
   if(ov) ov.addEventListener('click',function(e){if(e.target===ov){MODAL={type:null,data:null,editando:false};render();}});
@@ -1500,8 +1504,6 @@ function attachHomeEvents(){
     }
     VIEW.screen='acta'; render();
   });
-  var bva=$('btn-volver-acta');
-  if(bva) bva.addEventListener('click',function(){VIEW.screen='acta';render();});
   var bmc=$('btn-marcador');
   if(bmc) bmc.addEventListener('click',function(){VIEW.screen='marcador';render();});
   if(beq) beq.addEventListener('click',function(){VIEW.screen='equipos';render();});
@@ -1535,14 +1537,15 @@ function attachLigaEvents(){
       var p=DB.partidos.find(function(x){return x.id===el.dataset.pid;});
       if(!p) return;
       if(!p.completado && esModoÁrbitro()) {
-        // Ir a rellenar el acta
-        WIP=newWip();
-        WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
-        WIP.ligaId=p.liga_id; WIP.torneoId=p.torneo_id;
-        WIP.jornadaId=p.jornada_id; WIP.partidoId=p.id;
-        var j=DB.jornadas.find(function(x){return x.id===p.jornada_id;});
-        if(j){ WIP.jornada=j.numero; }
-        saveWip(WIP);
+        if(!WIP.partidoId || WIP.partidoId !== p.id) {
+          WIP=newWip();
+          WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
+          WIP.ligaId=p.liga_id; WIP.torneoId=p.torneo_id;
+          WIP.jornadaId=p.jornada_id; WIP.partidoId=p.id;
+          var j=DB.jornadas.find(function(x){return x.id===p.jornada_id;});
+          if(j){ WIP.jornada=j.numero; }
+          saveWip(WIP);
+        }
         VIEW.screen='acta'; render();
       } else {
         MODAL={type:'partido',data:clone(p),editando:false};render();
@@ -1562,13 +1565,15 @@ function attachTorneoEvents(){
       var p=DB.partidos.find(function(x){return x.id===el.dataset.pid;});
       if(!p) return;
       if(!p.completado && esModoÁrbitro()){
-        WIP=newWip();
-        WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
-        WIP.torneoId=p.torneo_id; WIP.ligaId=p.liga_id;
-        WIP.jornadaId=p.jornada_id; WIP.partidoId=p.id;
-        var j=DB.jornadas.find(function(x){return x.id===p.jornada_id;});
-        if(j){ WIP.jornada=j.numero; }
-        saveWip(WIP);
+        if(!WIP.partidoId || WIP.partidoId !== p.id) {
+          WIP=newWip();
+          WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
+          WIP.torneoId=p.torneo_id; WIP.ligaId=p.liga_id;
+          WIP.jornadaId=p.jornada_id; WIP.partidoId=p.id;
+          var j=DB.jornadas.find(function(x){return x.id===p.jornada_id;});
+          if(j){ WIP.jornada=j.numero; }
+          saveWip(WIP);
+        }
         VIEW.screen='acta'; render();
       } else {
         MODAL={type:'partido',data:clone(p),editando:false};render();
