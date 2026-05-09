@@ -578,10 +578,13 @@ function attachModalPartidoEvents(){
   if(pdf) pdf.addEventListener('click',function(){imprimirActa(MODAL.data);});
   if(can) can.addEventListener('click',function(){MODAL.data=clone(DB.partidos.find(function(x){return x.id===p.id;})||p);MODAL.editando=false;render();});
   if(ira) ira.addEventListener('click',function(){
-    WIP=newWip(); WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
-    WIP.ligaId=p.liga_id; WIP.torneoId=p.torneo_id; WIP.jornadaId=p.jornada_id; WIP.partidoId=p.id;
-    var j=DB.jornadas.find(function(x){return x.id===p.jornada_id;}); if(j) WIP.jornada=j.numero;
-    saveWip(WIP); MODAL={type:null,data:null,editando:false}; VIEW.screen='acta'; render();
+    if(!WIP.partidoId || WIP.partidoId !== p.id) {
+      WIP=newWip(); WIP.localId=p.local_id; WIP.visitanteId=p.visitante_id;
+      WIP.ligaId=p.liga_id; WIP.torneoId=p.torneo_id; WIP.jornadaId=p.jornada_id; WIP.partidoId=p.id;
+      var j=DB.jornadas.find(function(x){return x.id===p.jornada_id;}); if(j) WIP.jornada=j.numero;
+      saveWip(WIP);
+    }
+    MODAL={type:null,data:null,editando:false}; VIEW.screen='acta'; render();
   });
   var del=$('btn-modal-del');
   if(del) del.addEventListener('click',function(){
@@ -802,6 +805,10 @@ function attachActaEvents(){
       saveWip(WIP); render();
     });
   });
+  var gm=$('acta-goto-marcador');
+  if(gm) gm.addEventListener('click',function(){salvarWipActual();VIEW.screen='marcador';render();});
+  var gs=$('acta-goto-stats');
+  if(gs) gs.addEventListener('click',function(){salvarWipActual();VIEW.screen='stats';render();});
   var lim=$('btn-limpiar');
   if(lim) lim.addEventListener('click',function(){
     if(!window.confirm('¿Borrar borrador?')) return;
@@ -988,7 +995,8 @@ function buildMarcador() {
   if(s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
   cronBtns += '<button class="btn btn-ghost" id="btn-pitido-final" title="Sonido final del partido" style="font-size:18px;padding:6px 10px">📣</button>';
   var bc='<div class="breadcrumb" style="display:flex;justify-content:space-between;align-items:center"><div><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div><button class="btn btn-ghost" id="btn-marcador-refresh" style="font-size:12px;padding:5px 10px">Actualizar</button></div>';
-  if(!ultimo) return bc+'<div style="text-align:center;padding:60px"><h2 class="h2">Marcador en directo</h2><p style="color:#6b7a99;margin-top:8px">Aparecerá cuando empieces un acta.</p></div>';
+  var bannerActa = wipOk ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" id="btn-volver-acta" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
+  if(!ultimo) return bc+bannerActa+'<div style="text-align:center;padding:60px"><h2 class="h2">Marcador en directo</h2><p style="color:#6b7a99;margin-top:8px">Aparecerá cuando empieces un acta.</p></div>';
   var nL=nEq(ultimo.local_id),nV=nEq(ultimo.visitante_id),liga=ultimo.liga_id?getLiga(ultimo.liga_id):null;
   var goles=(ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var golesHtml='';
@@ -998,7 +1006,7 @@ function buildMarcador() {
   });
   var cronStatus=s.fin?'FIN':(s.alerta?'Fin parte '+s.parte:(s.run?'Parte '+s.parte+' min '+minP:'Parte '+s.parte+' pausado'));
   var extraInput=!s.fin?'<div style="display:flex;align-items:center;gap:6px"><span style="color:#6b7a99;font-size:11px">+min extra:</span><input type="number" id="cron-extra" min="0" max="10" value="'+s.extra+'" class="inp" style="width:42px;text-align:center;padding:5px 6px"/></div>':'';
-  var html=bc+'<div style="display:flex;flex-direction:column;gap:14px">';
+  var html=bc+bannerActa+'<div style="display:flex;flex-direction:column;gap:14px">';
   html+='<div style="background:#000;border:2px solid rgba(0,230,118,0.2);border-radius:16px;padding:20px 18px">';
   html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px"><div><div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(s.min)+':'+pad(s.sec)+'</div><div id="crono-status" style="color:#6b7a99;font-size:12px;margin-top:3px">'+cronStatus+'</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+cronBtns+'</div>'+extraInput+'</div></div>';
   html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center"><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div><div style="font-family:Oswald,sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div></div>';
@@ -1126,6 +1134,10 @@ function buildActa() {
   bcHtml += '<span class="breadcrumb-current">Nueva acta</span></div>';
 
   return '<div class="flex-col">' + bcHtml +
+    '<div style="display:flex;gap:8px;margin-bottom:4px">' +
+    '<button class="btn btn-ghost" id="acta-goto-marcador" style="flex:1;font-size:12px">📺 Marcador</button>' +
+    '<button class="btn btn-ghost" id="acta-goto-stats" style="flex:1;font-size:12px">📊 Estadísticas</button>' +
+    '</div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center">' +
     '<h2 class="h2">✏️ Nueva acta</h2>' +
     '<button class="btn btn-ghost" id="btn-limpiar" style="font-size:12px">🗑 Limpiar</button>' +
@@ -1244,8 +1256,11 @@ function buildEquipos() {
     }).join('');
   }
 
+  var wipActivoEq = !!(WIP&&WIP.localId&&WIP.visitanteId);
+  var bannerActaEq = wipActivoEq ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" id="btn-volver-acta" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
   return '<div class="flex-col">' +
     '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Equipos</span></div>' +
+    bannerActaEq +
     '<h2 class="h2">👕 Gestionar equipos</h2>' +
     '<div class="card"><p class="section-title">Añadir equipo</p>' +
     '<div style="display:flex;gap:10px;align-items:flex-end">' +
@@ -1260,7 +1275,9 @@ function buildEquipos() {
 function buildStats() {
   var c = DB.partidos.filter(function(p){return p.completado;});
   var bc = '<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Estadísticas</span></div>';
-  if(!c.length) return bc + '<div class="card"><p style="color:#6b7a99;text-align:center;padding:40px">Sin datos todavía.</p></div>';
+  var wipActivo = !!(WIP&&WIP.localId&&WIP.visitanteId);
+  var bannerActa = wipActivo ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" id="btn-volver-acta" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
+  if(!c.length) return bc + bannerActa + '<div class="card"><p style="color:#6b7a99;text-align:center;padding:40px">Sin datos todavía.</p></div>';
 
   var gM={}, pM={}, faltaM={}, fuM={}, partM={};
   c.forEach(function(p){
@@ -1326,7 +1343,7 @@ function buildStats() {
     fuerasSection = '<div class="card"><p class="section-title">Clavados por equipo</p>' + filas + '</div>';
   }
 
-  return bc + '<div class="flex-col">' +
+  return bc + bannerActa + '<div class="flex-col">' +
     '<h2 class="h2">Estadísticas</h2>' +
     '<div class="grid2">' +
     '<div class="card"><p class="section-title">Goleadores</p>' + rl(tG,'#00e676',' goles') + '</div>' +
@@ -1470,7 +1487,21 @@ function attachHomeEvents(){
   var beq=$('btn-equipos'), bst=$('btn-stats-global');
   if(bnl) bnl.addEventListener('click',function(){MODAL={type:'nueva-liga',data:{},editando:false};render();});
   if(bnt) bnt.addEventListener('click',function(){MODAL={type:'nuevo-torneo',data:{},editando:false};render();});
-  if(bas) bas.addEventListener('click',function(){WIP=newWip();saveWip(WIP);VIEW.screen='acta';render();});
+  if(bas) bas.addEventListener('click',function(){
+    var wipGuardado = loadWip();
+    if(wipGuardado && !wipGuardado.partidoId && (wipGuardado.goles&&wipGuardado.goles.length || wipGuardado.jornada)) {
+      if(!window.confirm('Hay un acta amistosa en borrador. ¿Continuar con ella?\n(Cancelar para empezar una nueva)')) {
+        WIP=newWip(); saveWip(WIP);
+      } else {
+        WIP = wipGuardado;
+      }
+    } else {
+      WIP=newWip(); saveWip(WIP);
+    }
+    VIEW.screen='acta'; render();
+  });
+  var bva=$('btn-volver-acta');
+  if(bva) bva.addEventListener('click',function(){VIEW.screen='acta';render();});
   var bmc=$('btn-marcador');
   if(bmc) bmc.addEventListener('click',function(){VIEW.screen='marcador';render();});
   if(beq) beq.addEventListener('click',function(){VIEW.screen='equipos';render();});
