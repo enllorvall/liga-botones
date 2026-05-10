@@ -948,27 +948,37 @@ async function eliminarTorneo(id){
 function imprimirActa(p){
   var nL=nEq(p.local_id), nV=nEq(p.visitante_id);
   function pad2(n){return String(n).padStart(2,"0");}
-  function fila(min,a,b,col){return '<tr><td style="padding:4px 8px;font-weight:700;color:'+col+';white-space:nowrap">'+pad2(min)+"'</td><td style='padding:4px 8px;font-weight:600'>"+a+"</td><td style='padding:4px 8px;color:#555;font-size:12px'>"+b+"</td></tr>";}
+  function filaMin(min,a,b,col){return '<tr><td style="padding:4px 8px;font-weight:700;color:'+col+';white-space:nowrap">'+pad2(min)+"'</td><td style='padding:4px 8px;font-weight:600'>"+a+"</td><td style='padding:4px 8px;color:#555;font-size:12px'>"+b+"</td></tr>";}
+  function filaSinMin(a,b,col){return '<tr><td style="padding:4px 8px;font-weight:700;color:'+col+'">—</td><td style="padding:4px 8px;font-weight:600">'+a+'</td><td style="padding:4px 8px;color:#555;font-size:12px">'+b+'</td></tr>';}
   function celda(n,tot){var a=n<=tot,hh=n===8||n===12||n===16||n===20;return '<span style="display:inline-flex;width:17px;height:17px;border:1px solid '+(a?(hh?"#c00":"#555"):"#ccc")+';border-radius:3px;align-items:center;justify-content:center;font-size:8px;font-weight:700;margin:1px;background:'+(a&&hh?"#fee":"white")+';color:'+(a?(hh?"#c00":"#333"):"transparent")+'">'+(a?(hh?"!":"x"):"")+'</span>';}
   var mx=Math.max(p.fueras_local||0,p.fueras_visitante||0,8);
   var bL="",bV="";for(var i=1;i<=mx;i++){bL+=celda(i,p.fueras_local||0);bV+=celda(i,p.fueras_visitante||0);}
   var gs=(p.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var fs=(p.faltas||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
-  var xs=(p.expulsiones||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
+  var xs=(p.expulsiones||[]).slice();
   var cs=(p.cambios||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
+  var cors=(p.corners||[]).slice();
   var SEC=function(t){return '<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#666;border-bottom:1px solid #ddd;padding-bottom:3px;margin:12px 0 7px;font-weight:600">'+t+'</div>';};
+
+  // Cabecera
   var html='<div style="display:flex;justify-content:space-between;border-bottom:3px solid #111;padding-bottom:10px;margin-bottom:14px">' +
     '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;letter-spacing:2px">LIGA DE BOTONES</div>' +
-    '<div style="font-size:12px;color:#555;margin-top:3px">'+( p.jornada_nombre||('Jornada '+p.jornada))+' - '+p.fecha+(p.arbitro?' - Árbitro: '+p.arbitro:'')+'</div></div>' +
+    '<div style="font-size:12px;color:#555;margin-top:3px">'+(p.jornada_nombre||('Jornada '+p.jornada))+' — '+p.fecha+(p.arbitro?' — Árbitro: '+p.arbitro:'')+'</div></div>' +
     '<div style="font-size:11px;color:#999">Acta oficial</div></div>';
+
+  // Marcador y porteros con paradas
+  var portL=p.portero_local?('<div style="font-size:12px;color:#444;margin-top:4px">🧤 '+p.portero_local+(p.paradas_local?'<span style="margin-left:6px;font-size:11px;color:#888">('+p.paradas_local+' paradas)</span>':'')+'</div>'):'';
+  var portV=p.portero_visitante?('<div style="font-size:12px;color:#444;margin-top:4px">🧤 '+p.portero_visitante+(p.paradas_visitante?'<span style="margin-left:6px;font-size:11px;color:#888">('+p.paradas_visitante+' paradas)</span>':'')+'</div>'):'';
   html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid #222">' +
-    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nL+'</div><div style="font-size:11px;color:#666;margin-top:2px">LOCAL</div>'+(p.portero_local?'<div style="font-size:12px;color:#444;margin-top:4px">'+p.portero_local+'</div>':'')+'</div>' +
+    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nL+'</div><div style="font-size:11px;color:#666;margin-top:2px">LOCAL</div>'+portL+'</div>' +
     '<div style="font-family:Oswald,sans-serif;font-size:50px;font-weight:700;letter-spacing:10px;padding:8px 0;text-align:center">'+(p.goles_local||0)+' - '+(p.goles_visitante||0)+'</div>' +
-    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nV+'</div><div style="font-size:11px;color:#666;margin-top:2px">VISITANTE</div>'+(p.portero_visitante?'<div style="font-size:12px;color:#444;margin-top:4px">'+p.portero_visitante+'</div>':'')+'</div></div>';
-  if(gs.length){html+=SEC("GOLES")+'<table style="width:100%;border-collapse:collapse">'+gs.map(function(g){return fila(g.minuto,g.autor,(g.equipo==="local"?nL:nV)+(g.tipo!=="normal"?" - "+g.tipo:""),"#006600");}).join('')+'</table>';}
-  if(fs.length){html+=SEC("FALTAS")+'<table style="width:100%;border-collapse:collapse">'+fs.map(function(f){return fila(f.minuto,f.jugador,(f.equipo==="local"?nL:nV)+" - "+(f.tarjeta==="roja"?"Roja":"Amarilla"),"#cc8800");}).join('')+'</table>';}
-  if(xs.length){html+=SEC("EXPULSIONES")+'<table style="width:100%;border-collapse:collapse">'+xs.map(function(x){return fila(x.minuto,x.jugador,(x.equipo==="local"?nL:nV)+" - "+x.motivo,"#cc0000");}).join('')+'</table>';}
-  if(cs.length){html+=SEC("CAMBIOS")+'<table style="width:100%;border-collapse:collapse">'+cs.map(function(c){return fila(c.minuto,c.sale+' / '+c.entra,c.equipo==="local"?nL:nV,"#555");}).join('')+'</table>';}
+    '<div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700">'+nV+'</div><div style="font-size:11px;color:#666;margin-top:2px">VISITANTE</div>'+portV+'</div></div>';
+
+  if(gs.length){html+=SEC("GOLES")+'<table style="width:100%;border-collapse:collapse">'+gs.map(function(g){return filaMin(g.minuto,g.autor,(g.equipo==="local"?nL:nV)+(g.tipo!=="normal"?" — "+g.tipo:""),"#006600");}).join('')+'</table>';}
+  if(fs.length){html+=SEC("FALTAS")+'<table style="width:100%;border-collapse:collapse">'+fs.map(function(f){return filaMin(f.minuto,f.jugador,(f.equipo==="local"?nL:nV)+" — "+(f.tarjeta==="roja"?"Roja":"Amarilla"),"#cc8800");}).join('')+'</table>';}
+  if(xs.length){html+=SEC("EXPULSIONES")+'<table style="width:100%;border-collapse:collapse">'+xs.map(function(x){return filaSinMin(x.jugador,(x.equipo==="local"?nL:nV)+" — "+x.motivo,"#cc0000");}).join('')+'</table>';}
+  if(cs.length){html+=SEC("CAMBIOS")+'<table style="width:100%;border-collapse:collapse">'+cs.map(function(c){return filaMin(c.minuto,c.sale+' → '+c.entra,c.equipo==="local"?nL:nV,"#555");}).join('')+'</table>';}
+  if(cors.length){html+=SEC("CÓRNERS")+'<table style="width:100%;border-collapse:collapse">'+cors.map(function(c){return filaSinMin("🚩 "+(c.equipo==="local"?nL:nV),c.gol==="si"?"⚽ Acabó en gol":"Sin gol","#0055aa");}).join('')+'</table>';}
   html+=SEC("FUERAS DE BANDA")+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px"><div><div style="font-weight:600;margin-bottom:5px">'+nL+': '+(p.fueras_local||0)+'</div>'+bL+'</div><div><div style="font-weight:600;margin-bottom:5px">'+nV+': '+(p.fueras_visitante||0)+'</div>'+bV+'</div></div>';
   if(p.notas){html+=SEC("NOTAS")+'<p style="padding:7px;border:1px solid #ddd;border-radius:5px;line-height:1.5">'+p.notas+'</p>';}
   html+='<div style="margin-top:36px;display:flex;justify-content:space-between">' +
