@@ -117,7 +117,7 @@ var CRON = { seg:0, min:0, sec:0, parte:1, run:false, fin:false, extra:0, alerta
 var cronInterval = null, cronAlertado = false;
 var WIP = loadWip() || newWip();
 
-function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
+function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],corners:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function pad(n){ return String(n).padStart(2,"0"); }
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -798,6 +798,12 @@ function attachActaEvents(){
     WIP.cambios=(WIP.cambios||[]).concat([{id:uid(),minuto:min,equipo:eq,sale:sale,entra:entra}]);
     saveWip(WIP); render();
   });
+  var acor=$('btn-add-cor-wip');
+  if(acor) acor.addEventListener('click',function(){
+    var eq=$('w-cor-eq').value,gol=$('w-cor-gol').value;
+    WIP.corners=(WIP.corners||[]).concat([{id:uid(),equipo:eq,gol:gol}]);
+    saveWip(WIP); render();
+  });
   document.querySelectorAll('.del-wip').forEach(function(btn){
     btn.addEventListener('click',function(){
       var tipo=this.dataset.tipo,id=this.dataset.id;
@@ -834,6 +840,7 @@ function attachActaEvents(){
       faltas:(WIP.faltas||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
       expulsiones:(WIP.expulsiones||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
       cambios:(WIP.cambios||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
+      corners:WIP.corners||[],
       goles_local:(WIP.goles||[]).filter(function(g){return g.equipo==='local';}).length,
       goles_visitante:(WIP.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
       notas:WIP.notas, completado:true,
@@ -870,8 +877,10 @@ function cronTick(){
   if(st){var minP=CRON.parte===1?CRON.min:15+CRON.min; st.textContent='Parte '+CRON.parte+' · min '+minP;}
 }
 function cronIniciar(){
-  if(!cronPartidoIniciado){ playSound('snd-inicio'); cronPartidoIniciado=true; }
+  var primeraVez=!cronPartidoIniciado;
+  if(primeraVez) cronPartidoIniciado=true;
   CRON.run=true;CRON.alerta=false;cronAlertado=false;clearInterval(cronInterval);cronInterval=setInterval(cronTick,1000);salvarWipActual();render();
+  if(primeraVez) playSound('snd-inicio');
 }
 function cronPausar(){CRON.run=false;clearInterval(cronInterval);salvarWipActual();render();}
 function cronSig2(){clearInterval(cronInterval);CRON.run=false;CRON.parte=2;CRON.seg=0;CRON.min=0;CRON.sec=0;CRON.extra=0;CRON.alerta=false;cronAlertado=false;salvarWipActual();render();}
@@ -1057,7 +1066,7 @@ function sincronizarEnCurso(){
   var datos={local_id:WIP.localId,visitante_id:WIP.visitanteId,
     goles_local:(WIP.goles||[]).filter(function(g){return g.equipo==='local';}).length,
     goles_visitante:(WIP.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
-    goles:WIP.goles||[],faltas:WIP.faltas||[],expulsiones:WIP.expulsiones||[],cambios:WIP.cambios||[],
+    goles:WIP.goles||[],faltas:WIP.faltas||[],expulsiones:WIP.expulsiones||[],cambios:WIP.cambios||[],corners:WIP.corners||[],
     fueras_local:WIP.fuerasL||0,fueras_visitante:WIP.fuerasV||0,
     fecha:WIP.fecha,jornada:Number(WIP.jornada)||null,arbitro:WIP.arbitro||'',notas:WIP.notas||'',
     completado:false,liga_id:WIP.ligaId||null,torneo_id:WIP.torneoId||null,jornada_id:WIP.jornadaId||null};
@@ -1092,7 +1101,7 @@ function buildActa() {
   if(s.run) cronBtns+='<button class="btn btn-yellow" id="cron-pausar">⏸ Pausar</button>';
   if(s.alerta&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">→ 2.ª parte</button>';
   if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">🏁 Fin</button>';
-  if(s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">↺ Reset</button>';
+  if(s.parte>1||s.min>0||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">↺ Reset</button>';
   cronBtns += '<button class="btn btn-ghost" id="btn-pitido-final" title="Sonido final del partido" style="font-size:18px;padding:6px 10px">📣</button>';
 
   function evRowActa(items,color,tipo){
@@ -1229,6 +1238,21 @@ function buildActa() {
     '<div><label class="label">Entra</label><input type="text" id="w-cam-entra" placeholder="Entra" class="inp"/></div>' +
     '<button class="btn btn-purple" id="btn-add-cam-wip">🔄 + Cambio</button></div>' +
     evRowActa(w.cambios,'206,147,216','cambios')+'</div>' +
+
+    // Córners
+    '<div class="card"><p class="section-title">🚩 Córners</p>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
+    '<div><label class="label">Equipo</label><select id="w-cor-eq" class="sel">'+optsEq+'</select></div>' +
+    '<div><label class="label">¿Acabó en gol?</label><select id="w-cor-gol" class="sel"><option value="no">No</option><option value="si">Sí</option></select></div>' +
+    '<button class="btn btn-orange" id="btn-add-cor-wip">🚩 + Córner</button></div>' +
+    (w.corners||[]).map(function(c){
+      var eqN=c.equipo==='local'?nL:nV, col=c.equipo==='local'?'0,230,118':'255,214,0';
+      return '<div class="evento-row"><span style="color:rgb('+col+');font-weight:700;min-width:30px">🚩</span>' +
+        '<span style="font-weight:600;flex:1">'+eqN+'</span>' +
+        (c.gol==='si'?'<span class="badge" style="background:rgba(0,230,118,0.15);color:#00e676">⚽ Gol</span>':'<span class="badge" style="background:rgba(107,122,153,0.2);color:#6b7a99">Sin gol</span>') +
+        '<button class="btn btn-ghost del-wip" data-tipo="corners" data-id="'+c.id+'" style="padding:3px 8px;font-size:13px;margin-left:8px">✕</button></div>';
+    }).join('') +
+    '</div>' +
 
     // Notas
     '<div class="card"><p class="section-title">📝 Notas del árbitro</p>' +
