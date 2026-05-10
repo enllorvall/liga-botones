@@ -1011,7 +1011,7 @@ function buildMarcador() {
   if(s.run) cronBtns+='<button class="btn btn-yellow" id="cron-pausar">Pausar</button>';
   if(s.alerta&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">2.ª parte</button>';
   if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">Fin</button>';
-  if(s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
+  if(cronPartidoIniciado||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
   cronBtns += '<button class="btn btn-ghost" id="btn-pitido-final" title="Sonido final del partido" style="font-size:18px;padding:6px 10px">📣</button>';
   var bc='<div class="breadcrumb" style="display:flex;justify-content:space-between;align-items:center"><div><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div><button class="btn btn-ghost" id="btn-marcador-refresh" style="font-size:12px;padding:5px 10px">Actualizar</button></div>';
   var bannerActa = wipOk ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
@@ -1111,7 +1111,7 @@ function buildActa() {
   if(s.run) cronBtns+='<button class="btn btn-yellow" id="cron-pausar">⏸ Pausar</button>';
   if(s.alerta&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">→ 2.ª parte</button>';
   if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">🏁 Fin</button>';
-  if(s.parte>1||s.min>0||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">↺ Reset</button>';
+  if(cronPartidoIniciado||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">↺ Reset</button>';
   cronBtns += '<button class="btn btn-ghost" id="btn-pitido-final" title="Sonido final del partido" style="font-size:18px;padding:6px 10px">📣</button>';
 
   function evRowActa(items,color,tipo){
@@ -1640,7 +1640,8 @@ var cronPartidoIniciado = false;
 function playSound(id) {
   var el = document.getElementById(id);
   if(!el) return;
-  try { el.currentTime = 0; el.play().catch(function(){}); } catch(e) {}
+  try { el.currentTime = 0; } catch(e) {}
+  try { el.play().catch(function(){}); } catch(e) {}
 }
 
 function cargarAudios(gol, inicio, final_) {
