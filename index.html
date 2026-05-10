@@ -291,7 +291,16 @@ function buildHome() {
   // Partido Amistoso (acta suelta) (sin liga ni torneo)
   var sueltos = DB.partidos.filter(function(p){return !p.liga_id&&!p.torneo_id&&p.completado;});
 
+  var wipActivo = !!(WIP && WIP.localId && WIP.visitanteId);
+  var bannerActaHome = wipActivo
+    ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+      '<span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso: ' + (nEq(WIP.localId)||'?') + ' vs ' + (nEq(WIP.visitanteId)||'?') + '</span>' +
+      '<button class="btn btn-gold" onclick="volverAlActa()" style="font-size:12px;padding:6px 14px">Volver al acta</button>' +
+      '</div>'
+    : '';
+
   return '<div class="flex-col">' +
+    bannerActaHome +
 
     // Pestañas superiores: Marcador, Equipos, Estadísticas
     '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
