@@ -1082,10 +1082,16 @@ function buildMarcador() {
       goles_visitante:(wip.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
       goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId};
   } else {
-    var hoy=new Date().toISOString().slice(0,10);var enC=DB.partidos.filter(function(p){return !p.completado&&p.local_id&&p.visitante_id&&p.jornada_id&&(p.fecha===hoy||((p.goles||[]).length+(p.faltas||[]).length)>0);});
-    enC.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
-    if(enC.length){ultimo=enC[0];}
-    else{var comp=DB.partidos.filter(function(p){return p.completado;});comp.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});ultimo=comp[0]||null;}
+    // Priorizar el partido con cron_estado activo más reciente (tsSync más alto)
+    var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&p.cron_estado.tsSync;});
+    conCron.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});
+    if(conCron.length){ultimo=conCron[0];}
+    else{
+      var hoy=new Date().toISOString().slice(0,10);var enC=DB.partidos.filter(function(p){return !p.completado&&p.local_id&&p.visitante_id&&p.jornada_id&&(p.fecha===hoy||((p.goles||[]).length+(p.faltas||[]).length)>0);});
+      enC.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
+      if(enC.length){ultimo=enC[0];}
+      else{var comp=DB.partidos.filter(function(p){return p.completado;});comp.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});ultimo=comp[0]||null;}
+    }
   }
   // Si es el mismo dispositivo del árbitro, usar CRON local; si no, usar cron_estado de DB
   var cronLocal = wipOk;
@@ -1175,7 +1181,7 @@ function attachMarcadorEvents(){
   // Ticker en vivo para mostrar el cron en tiempo real (sin recargar DB)
   var marcadorCronTicker=setInterval(function(){
     if(VIEW.screen!=='marcador'){clearInterval(marcadorCronTicker);return;}
-    var p=DB.partidos.find(function(x){return !x.completado&&x.cron_estado&&x.cron_estado.run;});
+    var cronPs=DB.partidos.filter(function(x){return !x.completado&&x.cron_estado&&x.cron_estado.run&&x.cron_estado.tsSync;});cronPs.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});var p=cronPs[0]||null;
     if(!p||!p.cron_estado) return;
     var ce=p.cron_estado;
     var segP1=ce.segParte1||0,segP2=ce.segParte2||0;
