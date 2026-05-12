@@ -68,10 +68,8 @@ select option{background:#1a2438}
   .tabla-clas th{padding:6px 4px!important;font-size:10px!important;letter-spacing:0!important}
   .tabla-clas td{padding:6px 4px!important;font-size:12px!important}
   .tabla-clas{min-width:unset!important}
-  /* Clavados: celdas más pequeñas para caber en 2 columnas */
-  .banda-cell{width:18px!important;height:18px!important;font-size:9px!important;border-radius:3px!important}
-  .banda-row{gap:2px!important}
-  .tabla-banda{gap:3px!important}
+  /* Clavados: apilar equipos en vertical para que quepan las 8 celdas */
+  .clavados-grid{grid-template-columns:1fr!important}
   /* Marcador: score más pequeño en móvil */
   .marcador-score-grid{gap:8px!important}
   .marcador-score-num{font-size:44px!important;letter-spacing:4px!important}
@@ -1417,7 +1415,7 @@ function buildActa() {
     '</div></div>' +
 
     // Fueras de banda
-    '<div class="card"><p class="section-title">🏳️ Clavados (fueras de banda)</p><div class="grid2">' +
+    '<div class="card"><p class="section-title">🏳️ Clavados (fueras de banda)</p><div class="grid2 clavados-grid">' +
     '<div>'+bandaActa(w.fuerasL||0,'#00e676',nL,'fL')+'</div>' +
     '<div>'+bandaActa(w.fuerasV||0,'#ffd600',nV,'fV')+'</div>' +
     '</div></div>' +
