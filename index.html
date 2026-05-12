@@ -63,6 +63,20 @@ select option{background:#1a2438}
 .breadcrumb-link{color:#4fc3f7;cursor:pointer;font-size:13px;font-weight:600}
 .breadcrumb-link:hover{text-decoration:underline}
 .breadcrumb-current{color:#6b7a99;font-size:13px}
+@media (max-width:480px){
+  /* Clasificación: celdas más compactas */
+  .tabla-clas th{padding:6px 4px!important;font-size:10px!important;letter-spacing:0!important}
+  .tabla-clas td{padding:6px 4px!important;font-size:12px!important}
+  .tabla-clas{min-width:unset!important}
+  /* Clavados: celdas más pequeñas para caber en 2 columnas */
+  .banda-cell{width:18px!important;height:18px!important;font-size:9px!important;border-radius:3px!important}
+  .banda-row{gap:2px!important}
+  .tabla-banda{gap:3px!important}
+  /* Marcador: score más pequeño en móvil */
+  .marcador-score-grid{gap:8px!important}
+  .marcador-score-num{font-size:44px!important;letter-spacing:4px!important}
+  .marcador-eq-name{font-size:15px!important}
+}
 @media print{
   body{background:white!important;color:black!important}
   #app{display:none!important}
@@ -369,7 +383,7 @@ function buildLiga() {
         '<td style="padding:8px 7px;text-align:center;font-weight:700;color:#00e676;font-size:16px">'+e.PTS+'</td></tr>';
     }).join('');
     tablaHtml = '<div class="card" style="padding:0;overflow-x:auto;margin-bottom:16px">' +
-      '<table style="width:100%;border-collapse:collapse;min-width:360px">' +
+      '<table class="tabla-clas" style="width:100%;border-collapse:collapse;min-width:320px">' +
       '<thead><tr style="background:#1a2438">'+['#','Equipo','PJ','PG','PE','PP','GF','GC','DG','PTS'].map(function(h,i){return '<th style="padding:9px 7px;font-size:11px;color:#6b7a99;text-transform:uppercase;letter-spacing:1px;font-weight:600;text-align:'+(i===1?'left':'center')+'">'+h+'</th>';}).join('')+'</tr></thead>' +
       '<tbody>'+rows+'</tbody></table></div>';
   }
@@ -441,7 +455,7 @@ function buildTorneo() {
           '<td style="padding:8px 7px;text-align:center;font-weight:700;color:#ffd600;font-size:16px">'+e.PTS+'</td></tr>';
       }).join('');
       contenido += '<div class="card" style="padding:0;overflow-x:auto;margin-bottom:16px">' +
-        '<table style="width:100%;border-collapse:collapse;min-width:360px">' +
+        '<table class="tabla-clas" style="width:100%;border-collapse:collapse;min-width:320px">' +
         '<thead><tr style="background:#1a2438">'+['#','Equipo','PJ','PG','PE','PP','GF','GC','DG','PTS'].map(function(h,i){return '<th style="padding:9px 7px;font-size:11px;color:#6b7a99;text-transform:uppercase;font-weight:600;text-align:'+(i===1?'left':'center')+'">'+h+'</th>';}).join('')+'</tr></thead>' +
         '<tbody>'+rows+'</tbody></table></div>';
     }
@@ -1137,7 +1151,7 @@ function buildMarcador() {
   var html=bc+bannerActa+'<div style="display:flex;flex-direction:column;gap:14px">';
   html+='<div style="background:#000;border:2px solid rgba(0,230,118,0.2);border-radius:16px;padding:20px 18px">';
   html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px"><div><div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(Math.floor(tsD/60))+':'+pad(tsD%60)+'</div><div id="crono-status" style="color:#6b7a99;font-size:12px;margin-top:3px">'+cronStatusTxt+'</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+cronBtns+'</div></div></div>';
-  html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center"><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff" id="marcador-nombre-local">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div><div id="marcador-score-val" style="font-family:Oswald,sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div><div><div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff" id="marcador-nombre-visitante">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div></div>';
+  html+='<div class="marcador-score-grid" style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center"><div><div class="marcador-eq-name" style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff" id="marcador-nombre-local">'+nL+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">LOCAL</div></div><div class="marcador-score-num" id="marcador-score-val" style="font-family:Oswald,sans-serif;font-size:64px;font-weight:700;color:#00e676;letter-spacing:8px;line-height:1">'+ultimo.goles_local+' - '+ultimo.goles_visitante+'</div><div><div class="marcador-eq-name" style="font-family:Oswald,sans-serif;font-size:20px;font-weight:700;color:#fff" id="marcador-nombre-visitante">'+nV+'</div><div style="color:#6b7a99;font-size:11px;margin-top:2px">VISITANTE</div></div></div>';
   html+='<div style="text-align:center;color:#6b7a99;font-size:12px;margin-top:8px">'+(liga?'<span class="badge" style="background:rgba(0,230,118,0.1);color:#00e676;margin-right:8px">'+liga.nombre+'</span>':'')+'Jornada '+ultimo.jornada+(ultimo.fecha?' - '+ultimo.fecha:'')+(wipOk?' <span class="badge" style="background:rgba(255,214,0,0.15);color:#ffd600">En curso</span>':'')+'</div></div>';
   html+='<div class="card" id="marcador-goles-card"'+(goles.length?'':' style="display:none"')+'><p class="section-title">Goles</p><div id="marcador-goles-list">'+golesHtml+'</div></div>';
   html+='</div>';
