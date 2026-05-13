@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Liga de Botones</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
 :root {
   --felt-deep: #0c1f14;
@@ -30,7 +30,7 @@
 body{
   background:var(--felt-deep);
   color:var(--chalk);
-  font-family:'DM Sans',sans-serif;
+  font-family:'Inter',sans-serif;
   min-height:100vh;
   position:relative;
 }
@@ -71,9 +71,9 @@ select option{background:var(--felt)}
 .btn-purple{background:#9b7fc2;color:var(--chalk)}
 .btn-ghost{background:rgba(0,0,0,0.3);color:var(--chalk);border:1px solid rgba(245,240,230,0.22)}
 .btn-orange{background:#e07820;color:var(--chalk)}
-.inp{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:2px;padding:9px 12px;color:var(--chalk);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
+.inp{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:2px;padding:9px 12px;color:var(--chalk);font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100%}
 .inp:focus{border-color:rgba(245,240,230,0.5)}
-.sel{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:2px;padding:9px 12px;color:var(--chalk);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%}
+.sel{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:2px;padding:9px 12px;color:var(--chalk);font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100%}
 .label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:0.16em;display:block;margin-bottom:5px}
 .section-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:0.16em;margin-bottom:12px}
 .badge{border-radius:0;padding:2px 7px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;white-space:nowrap;display:inline-block;text-transform:uppercase}
@@ -136,7 +136,7 @@ select option{background:var(--felt)}
   #pdf-area{display:block!important}
 }
 @media screen{#pdf-area{display:none}}
-#pdf-area{font-family:'DM Sans',sans-serif;max-width:680px;margin:0 auto;padding:22px;color:#111;font-size:13px}
+#pdf-area{font-family:'Inter',sans-serif;max-width:680px;margin:0 auto;padding:22px;color:#111;font-size:13px}
 </style>
 </head>
 <body>
@@ -150,7 +150,9 @@ var TEAM_KIT = {
   'CD Logroñés':        {primary:'#d6334b', secondary:'#f5f0e6', pattern:'vstripes', short:'LOG'},
   'Logroñés':           {primary:'#d6334b', secondary:'#f5f0e6', pattern:'vstripes', short:'LOG'},
   'Villarreal CF':      {primary:'#ffd200', secondary:'#1a4a8c', pattern:'solid',    short:'VIL'},
-  'Valencia CF':        {primary:'#ffd200', secondary:'#1a1a1a', pattern:'solid',    short:'VCF'},
+  'Valencia CF':        {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'VCF'},
+  'RCD Mallorca':        {primary:'#d42b2b', secondary:'#d42b2b', pattern:'solid',    short:'MAL'},
+  'Mallorca':             {primary:'#d42b2b', secondary:'#d42b2b', pattern:'solid',    short:'MAL'},
   'Atlético de Madrid': {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
   'Atlético Madrid':    {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
   'Levante UD':         {primary:'#d6334b', secondary:'#1a4a8c', pattern:'halves',   short:'LEV'},
@@ -191,7 +193,6 @@ function buttonSVG(nombre, size) {
   } else {
     face = '<rect x="0" y="0" width="'+s+'" height="'+s+'" fill="'+k.primary+'"/>';
   }
-  var threadColor = k.secondary === '#1a1a1a' || k.secondary === '#0a0a0a' ? '#f5f0e6' : '#0a0a0a';
   var holes = [[-1,-1],[1,-1],[-1,1],[1,1]].map(function(d){
     return '<circle cx="'+(cx+d[0]*hd)+'" cy="'+(cy+d[1]*hd)+'" r="'+holeR+'" fill="#0a0a0a" opacity="0.85"/>';
   }).join('');
@@ -209,10 +210,6 @@ function buttonSVG(nombre, size) {
     '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="url(#g-'+uid+')"/>'+
     '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r*0.78)+'" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="'+Math.max(0.5,s*0.008)+'" stroke-dasharray="'+s*0.04+' '+s*0.025+'"/>'+
     holes+
-    '<g stroke="'+threadColor+'" stroke-width="'+Math.max(0.6,s*0.012)+'" stroke-linecap="round" opacity="0.55">'+
-      '<line x1="'+(cx-hd)+'" y1="'+(cy-hd)+'" x2="'+(cx+hd)+'" y2="'+(cy+hd)+'"/>'+
-      '<line x1="'+(cx+hd)+'" y1="'+(cy-hd)+'" x2="'+(cx-hd)+'" y2="'+(cy+hd)+'"/>'+
-    '</g>'+
   '</svg>';
 }
 
