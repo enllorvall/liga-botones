@@ -133,7 +133,7 @@ var CRON=loadCronLS()||{duracion:15,parte:1,segParte1:0,segParte2:0,tsInicio:nul
 var cronInterval=null,cronAlertado=CRON.alerta||false;
 var WIP = loadWip() || newWip();
 
-function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],corners:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
+function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,tirosL:0,tirosV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],corners:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
 function uid(){ return Math.random().toString(36).slice(2,9); }
 function pad(n){ return String(n).padStart(2,"0"); }
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -790,6 +790,8 @@ function attachActaEvents(){
   }
   bindCounter('pL-dec','pL-inc','pL-val','paradasL');
   bindCounter('pV-dec','pV-inc','pV-val','paradasV');
+  bindCounter('tL-dec','tL-inc','tL-val','tirosL');
+  bindCounter('tV-dec','tV-inc','tV-val','tirosV');
   bindCounter('fL-dec','fL-inc','fL-val','fuerasL');
   bindCounter('fV-dec','fV-inc','fV-val','fuerasV');
 
@@ -860,6 +862,7 @@ function attachActaEvents(){
       local_id:WIP.localId, visitante_id:WIP.visitanteId,
       arbitro:WIP.arbitro||'', portero_local:WIP.porteroL, portero_visitante:WIP.porteroV,
       paradas_local:WIP.paradasL, paradas_visitante:WIP.paradasV,
+      tiros_local:WIP.tirosL||0, tiros_visitante:WIP.tirosV||0,
       fueras_local:WIP.fuerasL, fueras_visitante:WIP.fuerasV,
       goles:(WIP.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
       faltas:(WIP.faltas||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;}),
@@ -1073,6 +1076,7 @@ function imprimirActa(p){
   if(xs.length){html+=SEC("EXPULSIONES")+'<table style="width:100%;border-collapse:collapse">'+xs.map(function(x){return filaSinMin(x.jugador,(x.equipo==="local"?nL:nV)+" — "+x.motivo,"#cc0000");}).join('')+'</table>';}
   if(cs.length){html+=SEC("CAMBIOS")+'<table style="width:100%;border-collapse:collapse">'+cs.map(function(c){return filaMin(c.minuto,c.sale+' → '+c.entra,c.equipo==="local"?nL:nV,"#555");}).join('')+'</table>';}
   if(cors.length){html+=SEC("CÓRNERS")+'<table style="width:100%;border-collapse:collapse">'+cors.map(function(c){return filaSinMin("🚩 "+(c.equipo==="local"?nL:nV),c.gol==="si"?"⚽ Acabó en gol":"Sin gol","#0055aa");}).join('')+'</table>';}
+  if((p.tiros_local||0)+(p.tiros_visitante||0)>0){html+=SEC("TIROS A GOL")+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px"><div style="font-weight:600">'+nL+': <span style="color:#006600">'+(p.tiros_local||0)+'</span></div><div style="font-weight:600">'+nV+': <span style="color:#006600">'+(p.tiros_visitante||0)+'</span></div></div>';}
   html+=SEC("FUERAS DE BANDA")+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px"><div><div style="font-weight:600;margin-bottom:5px">'+nL+': '+(p.fueras_local||0)+'</div>'+bL+'</div><div><div style="font-weight:600;margin-bottom:5px">'+nV+': '+(p.fueras_visitante||0)+'</div>'+bV+'</div></div>';
   if(p.notas){html+=SEC("NOTAS")+'<p style="padding:7px;border:1px solid #ddd;border-radius:5px;line-height:1.5">'+p.notas+'</p>';}
   html+='<div style="margin-top:36px;display:flex;justify-content:space-between">' +
@@ -1281,6 +1285,7 @@ function sincronizarEnCurso(){
     goles_visitante:(WIP.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
     goles:WIP.goles||[],faltas:WIP.faltas||[],expulsiones:WIP.expulsiones||[],cambios:WIP.cambios||[],corners:WIP.corners||[],
     fueras_local:WIP.fuerasL||0,fueras_visitante:WIP.fuerasV||0,
+    tiros_local:WIP.tirosL||0,tiros_visitante:WIP.tirosV||0,
     fecha:WIP.fecha,jornada:Number(WIP.jornada)||null,arbitro:WIP.arbitro||'',notas:WIP.notas||'',
     completado:false,liga_id:WIP.ligaId||null,torneo_id:WIP.torneoId||null,jornada_id:WIP.jornadaId||null,
     cron_estado:{duracion:CRON.duracion,parte:CRON.parte,segParte1:segP1,segParte2:segP2,tsSync:Date.now(),run:CRON.run,fin:CRON.fin,alerta:CRON.alerta,descuento1:CRON.descuento1,descuento2:CRON.descuento2}};
@@ -1414,6 +1419,14 @@ function buildActa() {
     '<div class="counter"><span style="color:#6b7a99;font-size:13px;min-width:55px">Paradas</span><button class="counter-btn" id="pV-dec">−</button><span class="counter-val" id="pV-val" style="color:#4fc3f7">'+(w.paradasV||0)+'</span><button class="counter-btn" id="pV-inc">+</button></div></div>' +
     '</div></div>' +
 
+    // Tiros a gol
+    '<div class="card"><p class="section-title">🎯 Tiros a gol</p><div class="grid2">' +
+    '<div><label class="label" style="color:#00e676">'+nL+'</label>' +
+    '<div class="counter"><button class="counter-btn" id="tL-dec">−</button><span class="counter-val" id="tL-val" style="color:#00e676">'+(w.tirosL||0)+'</span><button class="counter-btn" id="tL-inc">+</button></div></div>' +
+    '<div><label class="label" style="color:#ffd600">'+nV+'</label>' +
+    '<div class="counter"><button class="counter-btn" id="tV-dec">−</button><span class="counter-val" id="tV-val" style="color:#ffd600">'+(w.tirosV||0)+'</span><button class="counter-btn" id="tV-inc">+</button></div></div>' +
+    '</div></div>' +
+
     // Fueras de banda
     '<div class="card"><p class="section-title">🏳️ Clavados (fueras de banda)</p><div class="grid2 clavados-grid">' +
     '<div>'+bandaActa(w.fuerasL||0,'#00e676',nL,'fL')+'</div>' +
@@ -1526,7 +1539,7 @@ function buildStats() {
   var bannerActa = wipActivo ? '<div style="background:rgba(255,214,0,0.12);border:1px solid rgba(255,214,0,0.35);border-radius:10px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="color:#ffd600;font-size:13px;font-weight:600">✏️ Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:12px;padding:6px 14px">Volver al acta</button></div>' : '';
   if(!c.length) return bc + bannerActa + '<div class="card"><p style="color:#6b7a99;text-align:center;padding:40px">Sin datos todavía.</p></div>';
 
-  var gM={}, pM={}, faltaM={}, fuM={}, partM={};
+  var gM={}, pM={}, faltaM={}, fuM={}, tirosM={}, partM={};
   c.forEach(function(p){
     // Goles
     (p.goles||[]).forEach(function(g){
@@ -1537,13 +1550,15 @@ function buildStats() {
     if(p.portero_visitante) pM[p.portero_visitante] = (pM[p.portero_visitante]||0) + (p.paradas_visitante||0);
     // Faltas
     (p.faltas||[]).forEach(function(f){ faltaM[f.jugador] = (faltaM[f.jugador]||0) + 1; });
-    // Fueras de banda
+    // Fueras de banda y tiros a gol por equipo
     if(p.local_id){
       fuM[p.local_id] = (fuM[p.local_id]||0) + (+(p.fueras_local)||0);
+      tirosM[p.local_id] = (tirosM[p.local_id]||0) + (+(p.tiros_local)||0);
       partM[p.local_id] = (partM[p.local_id]||0) + 1;
     }
     if(p.visitante_id){
       fuM[p.visitante_id] = (fuM[p.visitante_id]||0) + (+(p.fueras_visitante)||0);
+      tirosM[p.visitante_id] = (tirosM[p.visitante_id]||0) + (+(p.tiros_visitante)||0);
       partM[p.visitante_id] = (partM[p.visitante_id]||0) + 1;
     }
   });
@@ -1673,6 +1688,41 @@ function buildStats() {
         '<div style="display:flex;gap:6px;align-items:flex-end;padding:8px 0 4px">' + barras + '</div>' +
         '<div style="display:flex;justify-content:center;margin-top:6px">' +
         '<span style="color:#6b7a99;font-size:12px">Total: ' + totalGoles + ' goles en ' + c.length + ' partidos · ' + (totalGoles/c.length).toFixed(1) + ' goles/partido</span>' +
+        '</div></div>';
+    })() +
+
+    // Tiros a gol por equipo
+    (function(){
+      var tT = Object.entries(tirosM).filter(function(d){return d[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+      if(!tT.length) return '';
+      var mxT = tT[0][1] || 1;
+      var totalTiros = tT.reduce(function(s,d){return s+d[1];},0);
+      var golesTotal = c.reduce(function(s,p){return s+(p.goles_local||0)+(p.goles_visitante||0);},0);
+      var filas = tT.map(function(d){
+        var total = d[1];
+        var pts = partM[d[0]] || 1;
+        var prom = (total/pts).toFixed(1);
+        var gEq = c.reduce(function(s,p){
+          var gl = p.local_id===d[0]?(p.goles_local||0):0;
+          var gv = p.visitante_id===d[0]?(p.goles_visitante||0):0;
+          return s+gl+gv;
+        },0);
+        var efic = total>0 ? Math.round(gEq/total*100) : 0;
+        return '<div style="margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-size:13px;font-weight:600">'+nEq(d[0])+'</span>' +
+          '<div style="display:flex;gap:10px;align-items:center">' +
+          '<span style="color:#a78bfa;font-weight:700;font-size:14px">'+total+' tiros</span>' +
+          '<span style="color:#6b7a99;font-size:12px">'+prom+'/partido</span>' +
+          '<span style="color:#00e676;font-size:12px;font-weight:600">'+efic+'% efic.</span>' +
+          '</div></div>' +
+          '<div style="background:#1a2438;border-radius:4px;height:5px;margin-top:3px">' +
+          '<div style="background:#a78bfa;border-radius:4px;height:5px;width:'+(mxT>0?(total/mxT*100):0)+'%"></div></div></div>';
+      }).join('');
+      return '<div class="card"><p class="section-title">🎯 Tiros a gol por equipo</p>' + filas +
+        '<div style="border-top:1px solid #1e2d47;margin-top:8px;padding-top:8px;display:flex;gap:16px;flex-wrap:wrap">' +
+        '<span style="color:#6b7a99;font-size:12px">Total tiros: <b style="color:#a78bfa">'+totalTiros+'</b></span>' +
+        '<span style="color:#6b7a99;font-size:12px">Eficacia global: <b style="color:#00e676">'+(totalTiros>0?Math.round(golesTotal/totalTiros*100):0)+'%</b></span>' +
         '</div></div>';
     })() +
 
