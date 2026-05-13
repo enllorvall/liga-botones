@@ -145,28 +145,49 @@ select option{background:var(--felt)}
 <script>
 // ── EQUIPO VISUAL KIT ─────────────────────────────────────────────
 var TEAM_KIT = {
-  'Milan AC':           {primary:'#c1272d', secondary:'#1a1a1a', pattern:'halves',   short:'MIL'},
-  'AC Milan':           {primary:'#c1272d', secondary:'#1a1a1a', pattern:'halves',   short:'MIL'},
-  'CD Logroñés':        {primary:'#d6334b', secondary:'#f5f0e6', pattern:'vstripes', short:'LOG'},
-  'Logroñés':           {primary:'#d6334b', secondary:'#f5f0e6', pattern:'vstripes', short:'LOG'},
-  'Villarreal CF':      {primary:'#ffd200', secondary:'#1a4a8c', pattern:'solid',    short:'VIL'},
-  'Valencia CF':        {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'VCF'},
-  'RCD Mallorca':        {primary:'#d42b2b', secondary:'#d42b2b', pattern:'solid',    short:'MAL'},
-  'Mallorca':             {primary:'#d42b2b', secondary:'#d42b2b', pattern:'solid',    short:'MAL'},
-  'Atlético de Madrid': {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
-  'Atlético Madrid':    {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
-  'Levante UD':         {primary:'#d6334b', secondary:'#1a4a8c', pattern:'halves',   short:'LEV'},
-  'Racing de Santander':{primary:'#00873e', secondary:'#f5f0e6', pattern:'vstripes', short:'RAC'},
-  'Real Madrid':        {primary:'#f5f0e6', secondary:'#c0a84e', pattern:'solid',    short:'RMA'},
-  'FC Barcelona':       {primary:'#a50044', secondary:'#004d98', pattern:'vstripes', short:'FCB'},
-  'Real Sociedad':      {primary:'#1a4a8c', secondary:'#f5f0e6', pattern:'vstripes', short:'RSO'},
-  'Sporting Gijón':     {primary:'#c1272d', secondary:'#f5f0e6', pattern:'vstripes', short:'SPO'},
-  'Inter de Milán':     {primary:'#1a4a8c', secondary:'#1a1a1a', pattern:'vstripes', short:'INT'},
-  'AS Roma':            {primary:'#7a1c1c', secondary:'#ffc857', pattern:'sash',     short:'ROM'},
-  'CD Castellón':       {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'CAS'},
+  'milan ac':           {primary:'#c1272d', secondary:'#1a1a1a', pattern:'vstripes', short:'MIL'},
+  'ac milan':           {primary:'#c1272d', secondary:'#1a1a1a', pattern:'vstripes', short:'MIL'},
+  'milan':              {primary:'#c1272d', secondary:'#1a1a1a', pattern:'vstripes', short:'MIL'},
+  'cd logroñés':        {primary:'#d6334b', secondary:'#f5f0e6', pattern:'vstripes', short:'LOG'},
+  'logroñés':           {primary:'#d6334b', secondary:'#f5f0e6', pattern:'vstripes', short:'LOG'},
+  'villarreal cf':      {primary:'#ffd200', secondary:'#1a4a8c', pattern:'solid',    short:'VIL'},
+  'villarreal':         {primary:'#ffd200', secondary:'#1a4a8c', pattern:'solid',    short:'VIL'},
+  'valencia cf':        {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'VCF'},
+  'valencia':           {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'VCF'},
+  'mallorca':           {primary:'#d42b2b', secondary:'#1a1a1a', pattern:'solid',    short:'MAL'},
+  'rcd mallorca':       {primary:'#d42b2b', secondary:'#1a1a1a', pattern:'solid',    short:'MAL'},
+  'atlético de madrid': {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
+  'atlético madrid':    {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
+  'atletico de madrid': {primary:'#c1272d', secondary:'#f5f0e6', pattern:'halves',   short:'ATM'},
+  'levante ud':         {primary:'#d6334b', secondary:'#1a4a8c', pattern:'halves',   short:'LEV'},
+  'levante':            {primary:'#d6334b', secondary:'#1a4a8c', pattern:'halves',   short:'LEV'},
+  'racing de santander':{primary:'#00873e', secondary:'#f5f0e6', pattern:'vstripes', short:'RAC'},
+  'racing':             {primary:'#00873e', secondary:'#f5f0e6', pattern:'vstripes', short:'RAC'},
+  'real madrid':        {primary:'#f5f0e6', secondary:'#c0a84e', pattern:'solid',    short:'RMA'},
+  'fc barcelona':       {primary:'#a50044', secondary:'#004d98', pattern:'vstripes', short:'FCB'},
+  'barcelona':          {primary:'#a50044', secondary:'#004d98', pattern:'vstripes', short:'FCB'},
+  'real sociedad':      {primary:'#1a4a8c', secondary:'#f5f0e6', pattern:'vstripes', short:'RSO'},
+  'sporting gijón':     {primary:'#c1272d', secondary:'#f5f0e6', pattern:'vstripes', short:'SPO'},
+  'sporting gijon':     {primary:'#c1272d', secondary:'#f5f0e6', pattern:'vstripes', short:'SPO'},
+  'inter de milán':     {primary:'#1a4a8c', secondary:'#1a1a1a', pattern:'vstripes', short:'INT'},
+  'inter de milan':     {primary:'#1a4a8c', secondary:'#1a1a1a', pattern:'vstripes', short:'INT'},
+  'inter':              {primary:'#1a4a8c', secondary:'#1a1a1a', pattern:'vstripes', short:'INT'},
+  'as roma':            {primary:'#7a1c1c', secondary:'#ffc857', pattern:'sash',     short:'ROM'},
+  'roma':               {primary:'#7a1c1c', secondary:'#ffc857', pattern:'sash',     short:'ROM'},
+  'cd castellón':       {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'CAS'},
+  'castellón':          {primary:'#f5f0e6', secondary:'#1a1a1a', pattern:'halves',   short:'CAS'},
 };
+// Búsqueda: exacta → luego minúsculas → luego contiene (parcial)
 function kitEq(nombre) {
-  return TEAM_KIT[nombre] || {primary:'#4a6b4a', secondary:'#2a3a2a', pattern:'solid', short:(nombre||'?').slice(0,3).toUpperCase()};
+  if(!nombre) return {primary:'#4a6b4a', secondary:'#2a3a2a', pattern:'solid', short:'?'};
+  var low = nombre.toLowerCase().trim();
+  if(TEAM_KIT[low]) return TEAM_KIT[low];
+  // búsqueda parcial: busca la primera clave que esté contenida en el nombre
+  var keys = Object.keys(TEAM_KIT);
+  for(var i=0;i<keys.length;i++){
+    if(low.indexOf(keys[i])!==-1 || keys[i].indexOf(low)!==-1) return TEAM_KIT[keys[i]];
+  }
+  return {primary:'#4a6b4a', secondary:'#2a3a2a', pattern:'solid', short:nombre.slice(0,3).toUpperCase()};
 }
 var _btnCtr = 0;
 function buttonSVG(nombre, size) {
