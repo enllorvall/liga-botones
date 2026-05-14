@@ -1310,7 +1310,6 @@ function buildMarcador() {
     if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">Fin</button>';
     if(cronPartidoIniciado||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
   }
-  cronBtns+='<button class="btn btn-ghost" id="btn-pitido-final" style="font-size:18px;padding:6px 10px">📣</button>';
   var bc='<div class="breadcrumb" style="display:flex;justify-content:space-between;align-items:center"><div><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div><button class="btn btn-ghost" id="btn-marcador-refresh" style="font-size:12px;padding:5px 10px">Actualizar</button></div>';
   var bannerActa = wipOk ? '<div style="background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em">&#11044; Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:10px;padding:6px 14px">Volver al acta</button></div>' : '';
   if(!ultimo) return bc+bannerActa+'<div style="text-align:center;padding:60px"><h2 class="h2">Marcador en directo</h2><p style="color:var(--mute);margin-top:8px">Aparecerá cuando empieces un acta.</p></div>';
@@ -1405,7 +1404,6 @@ function attachMarcadorEvents(){
   if(fi) fi.addEventListener('click',cronFin);
   if(cr) cr.addEventListener('click',cronReset);
   var desc=$('cron-descuento'); if(desc) desc.addEventListener('click',cronDescuento);
-  var pf=$('btn-pitido-final'); if(pf) pf.addEventListener('click',function(){ playSound('snd-final'); });
 
   var br=$('btn-marcador-refresh');
   if(br) br.addEventListener('click',function(){ _recargarPartidosYActualizar(); });
