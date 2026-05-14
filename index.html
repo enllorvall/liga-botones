@@ -240,6 +240,35 @@ function buttonSVGFromKit(kit, size) {
     holes+
     '</svg>';
 }
+// ── SELECTOR DE JUGADOR (compatible móvil) ────────────────────────
+// <datalist> no funciona en iOS Safari; usamos select nativo + input fallback
+function onPlayerPick(selId, inpId) {
+  var sel = document.getElementById(selId);
+  var inp = document.getElementById(inpId);
+  if(!sel || !inp) return;
+  if(sel.value === '__OTRO__') {
+    inp.style.display = 'block';
+    inp.value = '';
+    inp.focus();
+  } else {
+    inp.style.display = 'none';
+    inp.value = sel.value;
+  }
+}
+function playerPickHTML(idText, localId, visitanteId) {
+  var jjs = DB.plantilla.filter(function(j){ return j.equipo_id===localId||j.equipo_id===visitanteId; });
+  if(!jjs.length) return '<input type="text" id="'+idText+'" placeholder="Nombre" class="inp"/>';
+  var nL = localId ? nEq(localId) : '', nV = visitanteId ? nEq(visitanteId) : '';
+  var loc = jjs.filter(function(j){return j.equipo_id===localId;}).sort(function(a,b){return (a.dorsal||99)-(b.dorsal||99);});
+  var vis = jjs.filter(function(j){return j.equipo_id===visitanteId;}).sort(function(a,b){return (a.dorsal||99)-(b.dorsal||99);});
+  var opts = '<option value="">— Seleccionar —</option>';
+  if(loc.length) opts += '<optgroup label="'+nL+'">'+loc.map(function(j){ return '<option value="'+j.nombre.replace(/"/g,'&quot;')+'">'+(j.dorsal?j.dorsal+'. ':'')+j.nombre+'</option>'; }).join('')+'</optgroup>';
+  if(vis.length) opts += '<optgroup label="'+nV+'">'+vis.map(function(j){ return '<option value="'+j.nombre.replace(/"/g,'&quot;')+'">'+(j.dorsal?j.dorsal+'. ':'')+j.nombre+'</option>'; }).join('')+'</optgroup>';
+  opts += '<option value="__OTRO__">✏ Escribir nombre...</option>';
+  return '<select id="'+idText+'-pick" class="sel" onchange="onPlayerPick(\''+idText+'-pick\',\''+idText+'\')">'+opts+'</select>'+
+    '<input type="text" id="'+idText+'" placeholder="Nombre" class="inp" style="display:none;margin-top:4px"/>';
+}
+
 var _btnCtr = 0;
 function buttonSVG(nombre, size) {
   size = size || 40;
@@ -777,14 +806,13 @@ function buildModalPartido() {
 
   var contadores = ed ? '<div class="form-add" style="margin-bottom:10px"><p class="section-title">Paradas y fueras de banda</p><div class="grid2"><div><label class="label">Paradas '+nL+'</label><div class="counter"><button class="counter-btn" id="md-pL-dec">-</button><span class="counter-val" id="md-pL-val" style="color:var(--chalk-dim)">'+(p.paradas_local||0)+'</span><button class="counter-btn" id="md-pL-inc">+</button></div></div><div><label class="label">Paradas '+nV+'</label><div class="counter"><button class="counter-btn" id="md-pV-dec">-</button><span class="counter-val" id="md-pV-val" style="color:var(--chalk-dim)">'+(p.paradas_visitante||0)+'</span><button class="counter-btn" id="md-pV-inc">+</button></div></div><div><label class="label">Fueras '+nL+'</label><div class="counter"><button class="counter-btn" id="md-fL-dec">-</button><span class="counter-val" id="md-fL-val" style="color:var(--win)">'+(p.fueras_local||0)+'</span><button class="counter-btn" id="md-fL-inc">+</button></div></div><div><label class="label">Fueras '+nV+'</label><div class="counter"><button class="counter-btn" id="md-fV-dec">-</button><span class="counter-val" id="md-fV-val" style="color:var(--amber)">'+(p.fueras_visitante||0)+'</span><button class="counter-btn" id="md-fV-inc">+</button></div></div></div></div>' : '';
 
-  var mdDl = (function(){var jjs=DB.plantilla.filter(function(j){return j.equipo_id===p.local_id||j.equipo_id===p.visitante_id;});return jjs.length?'<datalist id="dl-jug-md">'+jjs.map(function(j){return '<option value="'+j.nombre.replace(/"/g,'&quot;')+'"/>';}).join('')+'</datalist>':''})();
-  var fGol = ed ? mdDl+'<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-gol-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Goleador</label><input type="text" id="add-gol-jug" placeholder="Nombre" class="inp" list="dl-jug-md"/></div></div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-gol-eq" class="sel">'+optsEq+'</select></div><div><label class="label">Tipo</label><select id="add-gol-tipo" class="sel"><option value="normal">Normal</option><option value="falta">De falta</option><option value="autopista">En propia</option></select></div><button class="btn btn-green" id="btn-add-gol-md">+ Gol</button></div></div>' : '';
+  var fGol = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-gol-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Goleador</label>'+playerPickHTML('add-gol-jug',p.local_id,p.visitante_id)+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-gol-eq" class="sel">'+optsEq+'</select></div><div><label class="label">Tipo</label><select id="add-gol-tipo" class="sel"><option value="normal">Normal</option><option value="falta">De falta</option><option value="autopista">En propia</option></select></div><button class="btn btn-green" id="btn-add-gol-md">+ Gol</button></div></div>' : '';
 
-  var fFalta = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-falt-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label><input type="text" id="add-falt-jug" placeholder="Nombre" class="inp" list="dl-jug-md"/></div></div><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-falt-eq" class="sel">'+optsEq+'</select></div><button class="btn btn-yellow" id="btn-add-falt-md">+ Falta</button></div></div>' : '';
+  var fFalta = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-falt-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label>'+playerPickHTML('add-falt-jug',p.local_id,p.visitante_id)+'</div></div><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-falt-eq" class="sel">'+optsEq+'</select></div><button class="btn btn-yellow" id="btn-add-falt-md">+ Falta</button></div></div>' : '';
 
-  var fExp = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-exp-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label><input type="text" id="add-exp-jug" placeholder="Nombre" class="inp" list="dl-jug-md"/></div></div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-exp-eq" class="sel">'+optsEq+'</select></div><div><label class="label">Motivo</label><select id="add-exp-mot" class="sel"><option value="fueras de banda">Clavados (fueras de banda)</option><option value="doble fauts">Doble fauts</option></select></div><button class="btn btn-red" id="btn-add-exp-md">+ Exp.</button></div></div>' : '';
+  var fExp = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-exp-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label>'+playerPickHTML('add-exp-jug',p.local_id,p.visitante_id)+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-exp-eq" class="sel">'+optsEq+'</select></div><div><label class="label">Motivo</label><select id="add-exp-mot" class="sel"><option value="fueras de banda">Clavados (fueras de banda)</option><option value="doble fauts">Doble fauts</option></select></div><button class="btn btn-red" id="btn-add-exp-md">+ Exp.</button></div></div>' : '';
 
-  var fCam = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-cam-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Equipo</label><select id="add-cam-eq" class="sel">'+optsEq+'</select></div></div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Sale</label><input type="text" id="add-cam-sale" placeholder="Sale" class="inp" list="dl-jug-md"/></div><div><label class="label">Entra</label><input type="text" id="add-cam-entra" placeholder="Entra" class="inp" list="dl-jug-md"/></div><button class="btn btn-purple" id="btn-add-cam-md">+ Cambio</button></div></div>' : '';
+  var fCam = ed ? '<div class="form-add"><div class="grid2" style="margin-bottom:8px"><div><label class="label">Min</label><input type="number" id="add-cam-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Equipo</label><select id="add-cam-eq" class="sel">'+optsEq+'</select></div></div><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Sale</label>'+playerPickHTML('add-cam-sale',p.local_id,p.visitante_id)+'</div><div><label class="label">Entra</label>'+playerPickHTML('add-cam-entra',p.local_id,p.visitante_id)+'</div><button class="btn btn-purple" id="btn-add-cam-md">+ Cambio</button></div></div>' : '';
 
   var notasSection = ed ? '<div style="margin-top:12px"><label class="label">Notas</label><textarea id="md-notas" class="inp" style="resize:vertical;min-height:60px">'+(p.notas||'')+'</textarea></div>' : (p.notas?'<div style="margin-top:12px"><p class="section-title">Notas</p><p style="color:var(--chalk);font-size:13px;line-height:1.6;background:var(--felt-hi);border-radius:2px;padding:10px">'+p.notas+'</p></div>':'');
 
@@ -1660,12 +1688,6 @@ function buildActa() {
     '<div>'+bandaActa(w.fuerasV||0,'var(--amber)',nV,'fV')+'</div>' +
     '</div></div>' +
 
-    // Datalists para sugerencias de nombres
-    (function(){
-      var jjs = DB.plantilla.filter(function(j){return j.equipo_id===w.localId||j.equipo_id===w.visitanteId;});
-      if(!jjs.length) return '';
-      return '<datalist id="dl-jug">'+jjs.map(function(j){return '<option value="'+j.nombre.replace(/"/g,'&quot;')+'"/>';}).join('')+'</datalist>';
-    })()+
 
     // Goles
     '<div class="card"><p class="section-title">Goles</p>' +
@@ -1673,7 +1695,7 @@ function buildActa() {
     '<span style="font-family:\'Anton\',sans-serif;font-size:18px;text-transform:uppercase">'+nL+'</span>' +
     '<div style="background:var(--ink);padding:5px 16px;font-family:\'Inter\',sans-serif;font-size:26px;color:var(--amber);font-weight:700;letter-spacing:4px;text-shadow:0 0 10px rgba(255,176,32,0.5);font-variant-numeric:tabular-nums">'+( w.goles||[]).filter(function(g){return g.equipo==='local';}).length+' – '+(w.goles||[]).filter(function(g){return g.equipo==='visitante';}).length+'</div>' +
     '<span style="font-family:\'Anton\',sans-serif;font-size:18px;text-transform:uppercase">'+nV+'</span></div>' +
-    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-gol-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Goleador</label><input type="text" id="w-gol-autor" placeholder="Nombre" class="inp" list="dl-jug"/></div></div>' +
+    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-gol-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Goleador</label>'+playerPickHTML('w-gol-autor',w.localId,w.visitanteId)+'</div></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
     '<div><label class="label">Equipo</label><select id="w-gol-eq" class="sel">'+optsEq+'</select></div>' +
     '<div><label class="label">Tipo</label><select id="w-gol-tipo" class="sel"><option value="normal">Normal</option><option value="falta">De falta</option><option value="autopista">En propia</option></select></div>' +
@@ -1682,7 +1704,7 @@ function buildActa() {
 
     // Faltas
     '<div class="card"><p class="section-title">Fauts</p>' +
-    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-falt-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label><input type="text" id="w-falt-jug" placeholder="Nombre" class="inp" list="dl-jug"/></div></div>' +
+    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-falt-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label>'+playerPickHTML('w-falt-jug',w.localId,w.visitanteId)+'</div></div>' +
     '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
     '<div><label class="label">Equipo</label><select id="w-falt-eq" class="sel">'+optsEq+'</select></div>' +
     '<button class="btn btn-yellow" id="btn-add-falt-wip" style="font-size:10px">+ Falt</button></div>' +
@@ -1690,7 +1712,7 @@ function buildActa() {
 
     // Expulsiones
     '<div class="card"><p class="section-title">Expulsiones</p>' +
-    '<div style="margin-bottom:8px"><label class="label">Jugador</label><input type="text" id="w-exp-jug" placeholder="Nombre" class="inp" list="dl-jug"/></div>' +
+    '<div style="margin-bottom:8px"><label class="label">Jugador</label>'+playerPickHTML('w-exp-jug',w.localId,w.visitanteId)+'</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
     '<div><label class="label">Equipo</label><select id="w-exp-eq" class="sel">'+optsEq+'</select></div>' +
     '<div><label class="label">Motivo</label><select id="w-exp-mot" class="sel"><option value="fueras de banda">Clavados (fueras de banda)</option><option value="doble fauts">Doble fauts</option></select></div>' +
@@ -1701,8 +1723,8 @@ function buildActa() {
     '<div class="card"><p class="section-title">Cambios</p>' +
     '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-cam-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Equipo</label><select id="w-cam-eq" class="sel">'+optsEq+'</select></div></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
-    '<div><label class="label">Sale</label><input type="text" id="w-cam-sale" placeholder="Sale" class="inp" list="dl-jug"/></div>' +
-    '<div><label class="label">Entra</label><input type="text" id="w-cam-entra" placeholder="Entra" class="inp" list="dl-jug"/></div>' +
+    '<div><label class="label">Sale</label>'+playerPickHTML('w-cam-sale',w.localId,w.visitanteId)+'</div>' +
+    '<div><label class="label">Entra</label>'+playerPickHTML('w-cam-entra',w.localId,w.visitanteId)+'</div>' +
     '<button class="btn btn-purple" id="btn-add-cam-wip" style="font-size:10px">+ Cambio</button></div>' +
     evRowActa(w.cambios,'155,127,194','cambios')+'</div>' +
 
@@ -2006,7 +2028,7 @@ function buildStats() {
 
   return bc + bannerActa + '<div class="flex-col">' +
     '<h2 class="h2">📊 '+titulo+'</h2>'+(subtitulo?'<p style="color:var(--mute);font-size:13px;margin-top:2px;margin-bottom:4px">'+subtitulo+'</p>':'')+
-    '<div class="grid2">' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">' +
     '<div class="card"><p class="section-title">Goleadores</p>' + rl(tG,'var(--win)',' goles') + '</div>' +
     '<div class="card"><p class="section-title">Porteros</p>' + rl(tP,'var(--chalk-dim)',' paradas') + '</div>' +
     '</div>' +
