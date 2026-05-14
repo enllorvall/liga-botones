@@ -1827,6 +1827,7 @@ function buildModalEquipo() {
     plantillaHtml += jugadores.map(function(j){
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(245,240,230,0.07)">'+
         '<div>'+
+          (j.dorsal?'<span style="font-family:\'Inter\',sans-serif;font-size:13px;color:var(--amber);font-weight:700;min-width:22px;display:inline-block;text-align:right;margin-right:8px">'+j.dorsal+'</span>':'')+
           '<span style="font-size:14px;color:var(--chalk);font-weight:500">'+j.nombre+'</span>'+
           (j.posicion?'<span style="font-size:11px;color:var(--mute);margin-left:8px">'+j.posicion+'</span>':'')+
         '</div>'+
@@ -1839,7 +1840,7 @@ function buildModalEquipo() {
   if(árbitro){
     plantillaHtml +=
       '<div class="form-add" style="margin-top:8px">'+
-        '<div class="grid2" style="margin-bottom:8px">'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:8px">'+
           '<div><label class="label">Nombre</label><input type="text" id="new-jug-nombre" placeholder="Ej: Carreño" class="inp"/></div>'+
           '<div><label class="label">Posición (opcional)</label><select id="new-jug-pos" class="sel">'+
             '<option value="">—</option>'+
@@ -1848,6 +1849,7 @@ function buildModalEquipo() {
             '<option value="Centrocampista">Centrocampista</option>'+
             '<option value="Delantero">Delantero</option>'+
           '</select></div>'+
+          '<div><label class="label">Dorsal</label><input type="number" id="new-jug-dorsal" placeholder="—" min="1" max="99" class="inp" style="text-align:center"/></div>'+
         '</div>'+
         '<button class="btn btn-green" id="btn-add-jugador" style="font-size:10px">+ Añadir jugador</button>'+
       '</div>';
@@ -2353,8 +2355,10 @@ function attachModalEquipoEvents(){
   // ── Añadir jugador ──
   var addJug = $('btn-add-jugador');
   if(addJug) addJug.addEventListener('click',function(){
-    var nombre = ($('new-jug-nombre').value||'').trim();
-    var pos    = ($('new-jug-pos')&&$('new-jug-pos').value)||'';
+    var nombre  = ($('new-jug-nombre').value||'').trim();
+    var pos     = ($('new-jug-pos')&&$('new-jug-pos').value)||'';
+    var dorsalV = ($('new-jug-dorsal')&&$('new-jug-dorsal').value)||'';
+    var dorsal  = dorsalV ? parseInt(dorsalV,10) : null;
     if(!nombre){$('new-jug-nombre').focus();return;}
     // Evitar duplicados (case-insensitive) en el mismo equipo
     var existe = DB.plantilla.some(function(j){
@@ -2362,7 +2366,7 @@ function attachModalEquipoEvents(){
     });
     if(existe){alert('Ya existe un jugador con ese nombre en este equipo.');return;}
     addJug.disabled=true;
-    db.from('plantilla').insert({id:uid(),equipo_id:e.id,nombre:nombre,posicion:pos}).then(function(res){
+    db.from('plantilla').insert({id:uid(),equipo_id:e.id,nombre:nombre,posicion:pos,dorsal:dorsal}).then(function(res){
       if(res.error){alert('Error: '+res.error.message);addJug.disabled=false;return;}
       cargar().then(function(){
         MODAL.data = DB.equipos.find(function(x){return x.id===e.id;}) || MODAL.data;
