@@ -147,6 +147,7 @@ select option{background:var(--felt)}
 <script>
 // ── EQUIPO VISUAL KIT ─────────────────────────────────────────────
 var TEAM_KIT = {
+  '_masthead':          {primary:'#f5f0e6', secondary:'#d6334b', pattern:'halves',   short:'LB'},
   'milan ac':           {primary:'#c1272d', secondary:'#1a1a1a', pattern:'vstripes', short:'MIL'},
   'ac milan':           {primary:'#c1272d', secondary:'#1a1a1a', pattern:'vstripes', short:'MIL'},
   'milan':              {primary:'#c1272d', secondary:'#1a1a1a', pattern:'vstripes', short:'MIL'},
@@ -398,7 +399,11 @@ function buildPage() {
       : '<button class="btn btn-ghost" id="btn-login-pin" style="font-size:9px;padding:4px 12px;min-height:0;letter-spacing:0.14em">Árbitro</button>') +
     '</div>' +
     '</div>' +
-    '<h1 onclick="VIEW={screen:\'home\',ligaId:null,torneoId:null};render();" style="font-family:\'Anton\',sans-serif;font-size:clamp(36px,8vw,72px);font-weight:400;line-height:0.9;letter-spacing:-0.01em;text-transform:uppercase;color:var(--chalk);cursor:pointer;margin:0">LIGA<em style="font-style:italic;color:var(--carmin);font-weight:400;padding:0 0.15em">DE</em>BOTONES</h1>' +
+    '<div onclick="VIEW={screen:\'home\',ligaId:null,torneoId:null};render();" style="cursor:pointer;display:flex;align-items:center;gap:clamp(8px,2vw,20px);line-height:1">' +
+    '<span style="font-family:\'Anton\',sans-serif;font-size:clamp(36px,8vw,72px);font-weight:400;letter-spacing:-0.01em;text-transform:uppercase;color:var(--chalk)">LIGA</span>' +
+    '<span style="flex-shrink:0;display:flex;align-items:center">'+buttonSVG('_masthead', Math.min(72, Math.max(40, Math.round(window.innerWidth*0.07))))+'</span>'+
+    '<span style="font-family:\'Anton\',sans-serif;font-size:clamp(36px,8vw,72px);font-weight:400;letter-spacing:-0.01em;text-transform:uppercase;color:var(--chalk)">BOTONES</span>' +
+    '</div>' +
     '</header>';
 
   var content = '';
