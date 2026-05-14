@@ -132,8 +132,10 @@ select option{background:var(--felt)}
 }
 @media print{
   body{background:white!important;color:black!important}
+  body::before,body::after{display:none!important}
   #app{display:none!important}
-  #pdf-area{display:block!important}
+  .modal-overlay{display:none!important}
+  #pdf-area{display:block!important;position:relative;z-index:9999}
 }
 @media screen{#pdf-area{display:none}}
 #pdf-area{font-family:'Inter',sans-serif;max-width:680px;margin:0 auto;padding:22px;color:#111;font-size:13px}
