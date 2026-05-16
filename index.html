@@ -2218,6 +2218,10 @@ function attachEvents() {
     VIEW.screen='stats'; render();
   });
 
+  // Botón marcador (global — accesible desde cualquier pantalla)
+  var bmcG=$('btn-marcador');
+  if(bmcG) bmcG.addEventListener('click',function(){salvarWipActual();clearInterval(marcadorRefreshInterval);VIEW.screen='marcador';render();});
+
   // Modal close
   var ov=$('modal-overlay'), cl=$('btn-modal-close');
   if(ov) ov.addEventListener('click',function(e){if(e.target===ov){MODAL={type:null,data:null,editando:false};render();}});
@@ -2256,8 +2260,6 @@ function attachHomeEvents(){
     }
     VIEW.screen='acta'; render();
   });
-  var bmc=$('btn-marcador');
-  if(bmc) bmc.addEventListener('click',function(){VIEW.screen='marcador';render();});
   if(beq) beq.addEventListener('click',function(){VIEW.screen='equipos';render();});
   if(bst) bst.addEventListener('click',function(){
     VIEW.statsFilter = VIEW.ligaId ? {type:'liga',id:VIEW.ligaId} : VIEW.torneoId ? {type:'torneo',id:VIEW.torneoId} : null;
