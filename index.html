@@ -1687,12 +1687,18 @@ function buildActa() {
     '</div></div></div>' +
 
     // Porteros
-    '<div class="card"><p class="section-title">Porteros y paradas</p><div class="grid2">' +
-    '<div><label class="label">Portero '+nL+'</label><input type="text" id="w-porteroL" value="'+(w.porteroL||'')+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
-    '<div class="counter"><span style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);text-transform:uppercase;letter-spacing:0.12em;min-width:55px">Paradas</span><button class="counter-btn" id="pL-dec">−</button><span class="counter-val" id="pL-val">'+(w.paradasL||0)+'</span><button class="counter-btn" id="pL-inc">+</button></div></div>' +
-    '<div><label class="label">Portero '+nV+'</label><input type="text" id="w-porteroV" value="'+(w.porteroV||'')+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>' +
-    '<div class="counter"><span style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);text-transform:uppercase;letter-spacing:0.12em;min-width:55px">Paradas</span><button class="counter-btn" id="pV-dec">−</button><span class="counter-val" id="pV-val">'+(w.paradasV||0)+'</span><button class="counter-btn" id="pV-inc">+</button></div></div>' +
-    '</div></div>' +
+    (function(){
+      var portL=DB.plantilla.filter(function(j){return j.equipo_id===w.localId&&j.posicion&&j.posicion.toLowerCase().indexOf('portero')!==-1;});
+      var portV=DB.plantilla.filter(function(j){return j.equipo_id===w.visitanteId&&j.posicion&&j.posicion.toLowerCase().indexOf('portero')!==-1;});
+      var dlL=portL.length?'<datalist id="dl-portL">'+portL.map(function(j){return'<option value="'+j.nombre.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>':'';
+      var dlV=portV.length?'<datalist id="dl-portV">'+portV.map(function(j){return'<option value="'+j.nombre.replace(/"/g,'&quot;')+'">';}).join('')+'</datalist>':'';
+      return '<div class="card"><p class="section-title">Porteros y paradas</p><div class="grid2">'+
+        '<div><label class="label">Portero '+nL+'</label>'+dlL+'<input type="text" id="w-porteroL"'+(portL.length?' list="dl-portL"':'')+' value="'+(w.porteroL||'')+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>'+
+        '<div class="counter"><span style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);text-transform:uppercase;letter-spacing:0.12em;min-width:55px">Paradas</span><button class="counter-btn" id="pL-dec">−</button><span class="counter-val" id="pL-val">'+(w.paradasL||0)+'</span><button class="counter-btn" id="pL-inc">+</button></div></div>'+
+        '<div><label class="label">Portero '+nV+'</label>'+dlV+'<input type="text" id="w-porteroV"'+(portV.length?' list="dl-portV"':'')+' value="'+(w.porteroV||'')+'" placeholder="Nombre" class="inp" style="margin-bottom:10px"/>'+
+        '<div class="counter"><span style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);text-transform:uppercase;letter-spacing:0.12em;min-width:55px">Paradas</span><button class="counter-btn" id="pV-dec">−</button><span class="counter-val" id="pV-val">'+(w.paradasV||0)+'</span><button class="counter-btn" id="pV-inc">+</button></div></div>'+
+        '</div></div>';
+    })()+
 
     // Tiros a gol
     '<div class="card"><p class="section-title">Tiros a gol</p><div class="grid2">' +
@@ -1822,7 +1828,12 @@ function buildModalEquipo() {
   if(!e) return '';
   var árbitro = esModoÁrbitro();
   var kit = kitEq(e.nombre);
-  var jugadores = DB.plantilla.filter(function(j){ return j.equipo_id === e.id; });
+  var jugadores = DB.plantilla.filter(function(j){ return j.equipo_id === e.id; }).sort(function(a,b){
+    if(a.dorsal&&b.dorsal) return a.dorsal-b.dorsal;
+    if(a.dorsal) return -1;
+    if(b.dorsal) return 1;
+    return a.nombre.localeCompare(b.nombre);
+  });
   var patrones = [
     {val:'solid',    label:'Sólido'},
     {val:'halves',   label:'Mitades'},
