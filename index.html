@@ -1361,7 +1361,7 @@ function buildMarcador() {
       fueras_local:wip.fuerasL||0,fueras_visitante:wip.fuerasV||0};
   } else {
     // Espectador: solo mostrar si hay un partido activo con cron_estado sincronizado
-    var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&p.cron_estado.tsSync;});
+    var ESTADOS_EN_JUEGO=['1run','1pause','fin1','2run','2pause'];var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&ESTADOS_EN_JUEGO.indexOf(p.cron_estado.estado)!==-1;});
     conCron.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});
     ultimo=conCron.length?conCron[0]:null;
   }
@@ -1430,7 +1430,7 @@ function _marcadorUltimo(){
       goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId,
       fueras_local:wip.fuerasL||0,fueras_visitante:wip.fuerasV||0};
   } else {
-    var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&p.cron_estado.tsSync;});
+    var ESTADOS_EN_JUEGO=['1run','1pause','fin1','2run','2pause'];var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&ESTADOS_EN_JUEGO.indexOf(p.cron_estado.estado)!==-1;});
     conCron.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});
     if(conCron.length){ultimo=conCron[0];}
     else{
