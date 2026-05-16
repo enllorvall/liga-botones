@@ -97,7 +97,7 @@ select option{background:var(--felt)}
 .counter{display:flex;align-items:center;gap:8px}
 .counter-btn{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:0;width:36px;height:36px;color:var(--chalk);font-size:20px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
 .counter-val{font-family:'Inter',sans-serif;font-size:22px;font-weight:700;min-width:30px;text-align:center;font-variant-numeric:tabular-nums;color:var(--chalk)}
-.crono-display{font-family:'Inter',sans-serif;font-size:56px;font-weight:700;line-height:1;letter-spacing:0.04em;font-variant-numeric:tabular-nums}
+.crono-display{font-family:'Inter',sans-serif;font-size:72px;font-weight:700;line-height:1;letter-spacing:0.04em;font-variant-numeric:tabular-nums}
 .partido-pendiente{cursor:pointer;transition:border-color .12s;border:1px solid rgba(245,240,230,0.1)}
 .partido-pendiente:hover{border-color:rgba(245,240,230,0.35)}
 .partido-jugado{cursor:pointer;transition:border-color .12s}
@@ -1391,9 +1391,9 @@ function buildMarcador() {
     tsD=0; cronColor='var(--mute)'; cronStatusTxt='Sin datos';
   }
   var cronBtns='';
-  var bc='<div class="breadcrumb" style="display:flex;justify-content:space-between;align-items:center"><div><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div><button class="btn btn-ghost" id="btn-marcador-refresh" style="font-size:12px;padding:5px 10px">Actualizar</button></div>';
+  var bc='<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div>';
   var bannerActa = wipOk ? '<div style="background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="font-family:\'Inter\',sans-serif;font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em">&#11044; Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:10px;padding:6px 14px">Volver al acta</button></div>' : '';
-  if(!ultimo) return bc+bannerActa+'<div style="text-align:center;padding:60px"><h2 class="h2">Marcador en directo</h2><p style="color:var(--mute);margin-top:8px">Aparecerá cuando empieces un acta.</p></div>';
+  if(!wipOk) return bc+'<div style="text-align:center;padding:60px 20px"><h2 class="h2" style="color:var(--mute)">Sin partido en juego</h2><p style="color:var(--chalk-dim);margin-top:12px;font-size:13px">El marcador solo funciona cuando hay un acta abierta.</p></div>';
   var nL=nEq(ultimo.local_id),nV=nEq(ultimo.visitante_id),liga=ultimo.liga_id?getLiga(ultimo.liga_id):null;
   var goles=(ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var golesHtml='';
@@ -1483,9 +1483,6 @@ function _recargarPartidosYActualizar(){
 }
 
 function attachMarcadorEvents(){
-  var br=$('btn-marcador-refresh');
-  if(br) br.addEventListener('click',function(){ _recargarPartidosYActualizar(); });
-
   // Auto-refresco de datos cada 7 segundos (sin tocar el cron)
   clearInterval(marcadorRefreshInterval);
   marcadorRefreshInterval = setInterval(function(){
