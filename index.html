@@ -1043,11 +1043,11 @@ function attachActaEvents(){
     var d=$(decId),i=$(incId);
     if(d) d.addEventListener('click',function(){
       WIP[key]=Math.max(0,(WIP[key]||0)-1);saveWip(WIP);
-      if(key==='fuerasL'||key==='fuerasV'){salvarWipActual();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+      if(key==='fuerasL'||key==='fuerasV'){salvarWipActual();sincronizarEnCurso();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
     });
     if(i) i.addEventListener('click',function(){
       WIP[key]=(WIP[key]||0)+1;saveWip(WIP);
-      if(key==='fuerasL'||key==='fuerasV'){if(esProxima(WIP[key]))playBuzzer();salvarWipActual();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+      if(key==='fuerasL'||key==='fuerasV'){if(esProxima(WIP[key]))playBuzzer();salvarWipActual();sincronizarEnCurso();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
     });
   }
   bindCounter('pL-dec','pL-inc','pL-val','paradasL');
@@ -1614,6 +1614,7 @@ function buildActa() {
     });
     html+='</div>';
     var expAuto=Math.floor(val/8), expReg=(w.expulsiones||[]).filter(function(x){return x.motivo==='fueras de banda';}).length;
+    if(esProxima(val)) html+='<div style="background:rgba(214,51,75,0.15);border:1px solid rgba(214,51,75,0.5);padding:7px 10px;margin-top:8px;text-align:center"><p style="color:var(--carmin);font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase">⚠ Próxima expulsión</p></div>';
     html+='<div id="banda-alerta-'+id+'" style="background:rgba(214,51,75,0.15);border:1px solid rgba(214,51,75,0.3);border-radius:2px;padding:7px 10px;margin-top:8px;display:'+(expAuto>expReg?'block':'none')+'"><p style="color:var(--carmin);font-size:12px;font-weight:600">⚠️ Expulsión pendiente</p></div>';
     return html;
   }
