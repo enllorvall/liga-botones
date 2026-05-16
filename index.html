@@ -1365,6 +1365,14 @@ function buildMarcador() {
     conCron.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});
     ultimo=conCron.length?conCron[0]:null;
   }
+  // Árbitro: validar que el WIP no es de un partido ya completado en BD
+  if(wipOk && wip.partidoId){
+    var pMatch=DB.partidos.find(function(p){return p.id===wip.partidoId;});
+    if(pMatch && pMatch.completado){ ultimo=null; wipOk=false; }
+  }
+  var bc='<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div>';
+  var sinPartido=bc+'<div style="text-align:center;padding:60px 20px"><h2 class="h2" style="color:var(--mute)">Sin partido en juego</h2><p style="color:var(--chalk-dim);margin-top:12px;font-size:13px">El marcador solo funciona cuando hay un acta abierta.</p></div>';
+  if(!ultimo) return sinPartido;
   // Si es el mismo dispositivo del árbitro, usar CRON local; si no, usar cron_estado de DB
   var cronLocal = wipOk;
   var ce = cronLocal ? null : (ultimo.cron_estado || null);
@@ -1385,10 +1393,7 @@ function buildMarcador() {
     tsD=0; cronColor='var(--mute)'; cronStatusTxt='Sin datos';
   }
   var cronBtns='';
-  var bc='<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div>';
-  var sinPartido=bc+'<div style="text-align:center;padding:60px 20px"><h2 class="h2" style="color:var(--mute)">Sin partido en juego</h2><p style="color:var(--chalk-dim);margin-top:12px;font-size:13px">El marcador solo funciona cuando hay un acta abierta.</p></div>';
   var bannerActa = wipOk ? '<div style="background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="font-family:\'Inter\',sans-serif;font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em">&#11044; Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:10px;padding:6px 14px">Volver al acta</button></div>' : '';
-  if(!ultimo) return sinPartido;
   var nL=nEq(ultimo.local_id),nV=nEq(ultimo.visitante_id),liga=ultimo.liga_id?getLiga(ultimo.liga_id):null;
   var goles=(ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var golesHtml='';
