@@ -840,7 +840,7 @@ function buildModalPartido() {
     (completado&&!ed&&esModoÁrbitro()?'<button class="btn btn-gold" id="btn-modal-edit">Editar</button>':'')+
     (completado&&!ed?'<button class="btn btn-blue" id="btn-modal-pdf">PDF</button>':'')+
     (ed?'<button class="btn btn-green" id="btn-modal-save">Guardar</button>':'')+
-    (ed?'<button class="btn btn-ghost" id="btn-modal-cancel">Cancelarr</button>':'')+
+    (ed?'<button class="btn btn-ghost" id="btn-modal-cancel">Cancelar</button>':'')+
     (esModoÁrbitro()?'<button class="btn btn-red" id="btn-modal-del">Eliminar</button>':'')+
     '<button class="btn btn-ghost" id="btn-modal-close">X</button>'+
     '</div></div>'+
@@ -850,6 +850,13 @@ function buildModalPartido() {
     '<p class="section-title" style="margin-top:10px">Faltas</p>'+(!(p.faltas&&p.faltas.length)?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">Sin faltas</p>':'')+evRow(p.faltas,'255,234,0','faltas')+fFalta+
     '<p class="section-title" style="margin-top:10px">Expulsiones</p>'+(!(p.expulsiones&&p.expulsiones.length)?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">Sin expulsiones</p>':'')+evRow(p.expulsiones,'255,61,87','expulsiones')+fExp+
     '<p class="section-title" style="margin-top:10px">Cambios</p>'+(!(p.cambios&&p.cambios.length)?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">Sin cambios</p>':'')+evRow(p.cambios,'206,147,216','cambios')+fCam+
+    '<p class="section-title" style="margin-top:10px">Córners</p>'+
+    (!(p.corners&&p.corners.length)?'<p style="color:#1e2d47;font-size:12px;padding-bottom:8px">Sin córners</p>':'')+
+    (p.corners||[]).map(function(c){
+      var eqN=c.equipo==='local'?nL:nV,col=c.equipo==='local'?'125,209,129':'255,176,32';
+      return '<div class="evento-row"><span style="color:rgb('+col+');font-weight:700;min-width:32px">&#9670;</span><span style="font-weight:600;flex:1">'+eqN+'</span>'+(c.gol==='si'?'<span class="badge" style="background:rgba(125,209,129,0.15);color:var(--win)">Gol</span>':'<span class="badge" style="background:rgba(245,240,230,0.07);color:var(--mute)">Sin gol</span>')+(ed?'<button class="btn btn-ghost del-evento" data-tipo="corners" data-id="'+c.id+'" style="padding:3px 8px;font-size:13px;margin-left:auto">✕</button>':'')+'</div>';
+    }).join('')+
+    (ed?'<div class="form-add"><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end"><div><label class="label">Equipo</label><select id="add-cor-eq-md" class="sel">'+optsEq+'</select></div><div><label class="label">¿Acabó en gol?</label><select id="add-cor-gol-md" class="sel"><option value="no">No</option><option value="si">Sí</option></select></div><button class="btn btn-orange" id="btn-add-cor-md">+ Córner</button></div></div>':'')+
     notasSection+
     '</div></div>';
 }
@@ -930,6 +937,12 @@ function attachModalPartidoEvents(){
     var min=$('add-cam-min').value,eq=$('add-cam-eq').value,sale=$('add-cam-sale').value,entra=$('add-cam-entra').value;
     if(!min||!sale||!entra) return;
     p.cambios=(p.cambios||[]).concat([{id:uid(),minuto:min,equipo:eq,sale:sale,entra:entra}]);
+    render();
+  });
+  var acor=$('btn-add-cor-md');
+  if(acor) acor.addEventListener('click',function(){
+    var eq=$('add-cor-eq-md').value,gol=$('add-cor-gol-md').value;
+    p.corners=(p.corners||[]).concat([{id:uid(),equipo:eq,gol:gol}]);
     render();
   });
 }
