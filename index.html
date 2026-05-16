@@ -1047,7 +1047,7 @@ function attachActaEvents(){
     });
     if(i) i.addEventListener('click',function(){
       WIP[key]=(WIP[key]||0)+1;saveWip(WIP);
-      if(key==='fuerasL'||key==='fuerasV'){salvarWipActual();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
+      if(key==='fuerasL'||key==='fuerasV'){if(esProxima(WIP[key]))playBuzzer();salvarWipActual();render();}else{var el=$(valId);if(el)el.textContent=WIP[key];}
     });
   }
   bindCounter('pL-dec','pL-inc','pL-val','paradasL');
@@ -1344,7 +1344,8 @@ function buildMarcador() {
     ultimo={local_id:wip.localId,visitante_id:wip.visitanteId,
       goles_local:(wip.goles||[]).filter(function(g){return g.equipo==='local';}).length,
       goles_visitante:(wip.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
-      goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId};
+      goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId,
+      fueras_local:wip.fuerasL||0,fueras_visitante:wip.fuerasV||0};
   } else {
     // Priorizar el partido con cron_estado activo más reciente (tsSync más alto)
     var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&p.cron_estado.tsSync;});
@@ -1392,7 +1393,9 @@ function buildMarcador() {
   html+='<div aria-hidden style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,0.025) 0 1px,transparent 1px 3px);pointer-events:none"></div>';
   html+='<div style="position:relative">';
   html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px"><div><div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(Math.floor(tsD/60))+':'+pad(tsD%60)+'</div><div id="crono-status" style="font-family:\'Inter\',sans-serif;font-size:10px;color:var(--mute);margin-top:3px;text-transform:uppercase;letter-spacing:0.1em">'+cronStatusTxt+'</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+cronBtns+'</div></div></div>';
-  html+='<div class="marcador-score-grid"><div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+buttonSVG(nL,48)+'<div class="marcador-eq-name" id="marcador-nombre-local">'+nL+'</div><div style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);letter-spacing:0.14em;text-transform:uppercase">Local</div></div><div class="marcador-score-num" id="marcador-score-val">'+ultimo.goles_local+' – '+ultimo.goles_visitante+'</div><div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+buttonSVG(nV,48)+'<div class="marcador-eq-name" id="marcador-nombre-visitante">'+nV+'</div><div style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);letter-spacing:0.14em;text-transform:uppercase">Visitante</div></div></div>';
+  var proxL=esProxima(ultimo.fueras_local||0),proxV=esProxima(ultimo.fueras_visitante||0);
+  var proxBadge='<div style="font-family:\'Inter\',sans-serif;font-size:10px;font-weight:700;color:var(--carmin);letter-spacing:0.12em;text-transform:uppercase;background:rgba(214,51,75,0.15);border:1px solid rgba(214,51,75,0.4);padding:2px 8px;margin-top:2px">PRÓXIMA EXP.</div>';
+  html+='<div class="marcador-score-grid"><div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+buttonSVG(nL,48)+'<div class="marcador-eq-name" id="marcador-nombre-local">'+nL+'</div><div style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);letter-spacing:0.14em;text-transform:uppercase">Local</div><div id="marcador-proxima-local" style="display:'+(proxL?'block':'none')+';text-align:center">'+proxBadge+'</div></div><div class="marcador-score-num" id="marcador-score-val">'+ultimo.goles_local+' – '+ultimo.goles_visitante+'</div><div style="display:flex;flex-direction:column;align-items:center;gap:8px">'+buttonSVG(nV,48)+'<div class="marcador-eq-name" id="marcador-nombre-visitante">'+nV+'</div><div style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute);letter-spacing:0.14em;text-transform:uppercase">Visitante</div><div id="marcador-proxima-visitante" style="display:'+(proxV?'block':'none')+';text-align:center">'+proxBadge+'</div></div></div>';
   html+='<div style="text-align:center;font-family:\'Inter\',sans-serif;font-size:10px;color:var(--mute);margin-top:12px;letter-spacing:0.1em">'+(liga?liga.nombre+' · ':'')+' Jornada '+ultimo.jornada+(ultimo.fecha?' · '+ultimo.fecha:'')+(wipOk?' <span class="badge" style="background:rgba(255,176,32,0.15);color:var(--amber)">En curso</span>':'')+'</div>';
   html+='</div></div>';
   html+='<div class="card" id="marcador-goles-card"'+(goles.length?'':' style="display:none"')+'><p class="section-title">Goles</p><div id="marcador-goles-list">'+golesHtml+'</div></div>';
@@ -1416,7 +1419,8 @@ function _marcadorUltimo(){
     ultimo={local_id:wip.localId,visitante_id:wip.visitanteId,
       goles_local:(wip.goles||[]).filter(function(g){return g.equipo==='local';}).length,
       goles_visitante:(wip.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
-      goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId};
+      goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId,
+      fueras_local:wip.fuerasL||0,fueras_visitante:wip.fuerasV||0};
   } else {
     var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&p.cron_estado.tsSync;});
     conCron.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});
@@ -1449,6 +1453,8 @@ function actualizarMarcadorDatos(){
   });
   var gl=$('marcador-goles-list'); if(gl) gl.innerHTML=golesHtml;
   var gc=$('marcador-goles-card'); if(gc) gc.style.display=goles.length?'':'none';
+  var pxl=$('marcador-proxima-local'); if(pxl) pxl.style.display=esProxima(ultimo.fueras_local||0)?'block':'none';
+  var pxv=$('marcador-proxima-visitante'); if(pxv) pxv.style.display=esProxima(ultimo.fueras_visitante||0)?'block':'none';
 }
 
 function _recargarPartidosYActualizar(){
@@ -2419,6 +2425,21 @@ function attachModalEquipoEvents(){
 }
 
 // ── SONIDOS ───────────────────────────────────────────────────────
+var PROXIMA_FUERAS = [7, 11, 15, 19];
+function esProxima(n){ return PROXIMA_FUERAS.indexOf(n) !== -1; }
+
+function playBuzzer(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    var osc=ctx.createOscillator(); var gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type='square'; osc.frequency.value=320;
+    gain.gain.setValueAtTime(0.25,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.25);
+  }catch(e){}
+}
+
 function playSound(id) {
   var el = document.getElementById(id);
   if(!el) return;
