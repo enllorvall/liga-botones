@@ -928,7 +928,7 @@ function attachModalPartidoEvents(){
   var ax=$('btn-add-exp-md');
   if(ax) ax.addEventListener('click',function(){
     var min=$('add-exp-min').value,jug=$('add-exp-jug').value,eq=$('add-exp-eq').value,mot=$('add-exp-mot').value;
-    if(!min||!jug) return;
+    if(!jug) return;
     p.expulsiones=(p.expulsiones||[]).concat([{id:uid(),minuto:min,jugador:jug,equipo:eq,motivo:mot}]);
     render();
   });
