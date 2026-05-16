@@ -355,8 +355,23 @@ var CRON_KEY2='lb_cron';
 function saveCron(){try{localStorage.setItem(CRON_KEY2,JSON.stringify(CRON));}catch(e){}}
 function loadCronLS(){try{var r=localStorage.getItem(CRON_KEY2);return r?JSON.parse(r):null;}catch(e){return null;}}
 function clearCronLS(){try{localStorage.removeItem(CRON_KEY2);}catch(e){}}
-var CRON=loadCronLS()||{duracion:15,parte:1,segParte1:0,segParte2:0,tsInicio:null,run:false,fin:false,descuento1:0,descuento2:0,alerta:false};
-var cronInterval=null,cronAlertado=CRON.alerta||false;
+// estado: 'idle'|'1run'|'1pause'|'fin1'|'2run'|'2pause'|'fin'
+var CRON=(function(){
+  var saved=loadCronLS();
+  if(saved&&saved.estado) return saved; // nuevo formato
+  return {duracion:15,estado:'idle',segAcum:0,tsInicio:null};
+})();
+var cronInterval=null;
+function cronIsRunning(){return CRON.estado==='1run'||CRON.estado==='2run';}
+function calcSegDisplay(){
+  var elapsed=cronIsRunning()&&CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0;
+  var base=(CRON.estado[0]==='2'||CRON.estado==='fin')?CRON.duracion*60:0;
+  return base+CRON.segAcum+elapsed;
+}
+function acumular(){
+  if(cronIsRunning()&&CRON.tsInicio) CRON.segAcum+=(Date.now()-CRON.tsInicio)/1000;
+  CRON.tsInicio=null;
+}
 var WIP = loadWip() || newWip();
 
 function newWip(){ return {jornada:"",fecha:today(),localId:"",visitanteId:"",porteroL:"",porteroV:"",arbitro:"",paradasL:0,paradasV:0,tirosL:0,tirosV:0,fuerasL:0,fuerasV:0,goles:[],faltas:[],expulsiones:[],cambios:[],corners:[],notas:"",ligaId:null,torneoId:null,jornadaId:null,partidoId:null}; }
@@ -1004,15 +1019,16 @@ function attachModalNuevoTorneoEvents(){
 
 // ── ACTA EVENTS ───────────────────────────────────────────────────
 function attachActaEvents(){
-  var ic=$('cron-iniciar'),pa=$('cron-pausar'),s2=$('cron-sig2'),fi=$('cron-fin'),re=$('cron-reset');
-  if(ic) ic.addEventListener('click',cronIniciar);
-  if(pa) pa.addEventListener('click',cronPausar);
-  if(s2) s2.addEventListener('click',cronSig2);
-  if(fi) fi.addEventListener('click',cronFin);
-  if(re) re.addEventListener('click',cronReset);
-  var desc=$('cron-descuento'); if(desc) desc.addEventListener('click',cronDescuento);
-  var durEl=$('cron-duracion'); if(durEl){durEl.value=CRON.duracion;durEl.addEventListener('change',function(){CRON.duracion=Math.max(5,Math.min(45,+this.value||15));saveCron();});}
-  var pf=$('btn-pitido-final'); if(pf) pf.addEventListener('click',function(){ playSound('snd-final'); });
+  var ci1=$('cron-inicio-1'),cf1=$('cron-fin-1'),ci2=$('cron-inicio-2'),cf2=$('cron-fin-2');
+  var pa=$('cron-pausar'),rea=$('cron-reanudar'),re=$('cron-reset');
+  if(ci1) ci1.addEventListener('click',cronInicioPrimera);
+  if(cf1) cf1.addEventListener('click',cronFinalPrimera);
+  if(ci2) ci2.addEventListener('click',cronInicioSegunda);
+  if(cf2) cf2.addEventListener('click',cronFinalPartido);
+  if(pa)  pa.addEventListener('click',cronPausar);
+  if(rea) rea.addEventListener('click',cronReanudar);
+  if(re)  re.addEventListener('click',function(){ if(window.confirm('¿Reiniciar el cronómetro?')) cronReset(); });
+  var durEl=$('cron-duracion'); if(durEl){durEl.value=CRON.duracion;durEl.addEventListener('change',function(){CRON.duracion=Math.max(1,Math.min(45,+this.value||15));saveCron();});}
 
   function bindInp(id,key){ var el=$(id); if(el){ el.value=WIP[key]||''; var fn=function(){WIP[key]=this.value;saveWip(WIP);}; el.addEventListener('input',fn); el.addEventListener('change',fn); el.addEventListener('blur',fn); } }
   function bindSel(id,key){ var el=$(id); if(el){el.addEventListener('change',function(){WIP[key]=this.value;saveWip(WIP);render();});} }
@@ -1146,91 +1162,70 @@ function attachActaEvents(){
 }
 
 // ── CRONOMETRO ────────────────────────────────────────────────────
-function calcSegParte(){
-  var base=CRON.parte===1?CRON.segParte1:CRON.segParte2;
-  if(CRON.run&&CRON.tsInicio) base+=(Date.now()-CRON.tsInicio)/1000;
-  return base;
-}
-function calcSegTotal(){
-  return CRON.parte===1?calcSegParte():CRON.segParte1+calcSegParte();
-}
-function calcLimite(){
-  return(CRON.duracion+(CRON.parte===1?CRON.descuento1:CRON.descuento2))*60;
-}
-function acumularSegParte(){
-  if(CRON.run&&CRON.tsInicio){
-    var e=(Date.now()-CRON.tsInicio)/1000;
-    if(CRON.parte===1) CRON.segParte1+=e; else CRON.segParte2+=e;
-  }
-  CRON.tsInicio=null;
-}
 function cronTick(){
-  if(!CRON.run) return;
-  var seg=calcSegParte();
-  var lim=calcLimite();
-  if(seg>=lim&&!cronAlertado){
-    cronAlertado=true;CRON.alerta=true;
-    saveCron();sincronizarCron();salvarWipActual();render();return;
-  }
-  var ts=Math.floor(calcSegTotal());
-  var tp=Math.floor(calcSegParte());
+  var seg=Math.floor(calcSegDisplay());
   var d=$('crono-display'),st=$('crono-status');
-  if(d) d.textContent=pad(Math.floor(ts/60))+':'+pad(ts%60);
-  if(st) st.textContent='Parte '+CRON.parte+' · min '+Math.floor(tp/60);
+  if(d) d.textContent=pad(Math.floor(seg/60))+':'+pad(seg%60);
+  if(st){
+    if(CRON.estado==='2run'){
+      var elapsed2=CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0;
+      var min2=Math.floor((CRON.segAcum+elapsed2)/60);
+      st.textContent='2ª parte'+(min2>0?' · Minuto '+min2:'');
+    } else if(CRON.estado==='1run'){
+      var elapsed1=CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0;
+      st.textContent='1ª parte · Minuto '+Math.floor((CRON.segAcum+elapsed1)/60);
+    }
+  }
 }
-function cronIniciar(){
-  var primeraVez=!cronPartidoIniciado;
-  if(primeraVez) cronPartidoIniciado=true;
-  CRON.tsInicio=Date.now();
-  CRON.run=true;CRON.alerta=false;cronAlertado=false;
-  clearInterval(cronInterval);cronInterval=setInterval(cronTick,1000);
-  saveCron();sincronizarCron();salvarWipActual();render();
-  if(primeraVez) playSound('snd-inicio');
+function cronInicioPrimera(){
+  CRON.estado='1run'; CRON.segAcum=0; CRON.tsInicio=Date.now();
+  clearInterval(cronInterval); cronInterval=setInterval(cronTick,500);
+  saveCron(); sincronizarCron(); salvarWipActual(); render();
+  playSound('snd-inicio');
+}
+function cronFinalPrimera(){
+  acumular(); CRON.estado='fin1';
+  clearInterval(cronInterval);
+  saveCron(); sincronizarCron(); salvarWipActual(); render();
+  playSound('snd-final');
+}
+function cronInicioSegunda(){
+  CRON.estado='2run'; CRON.segAcum=0; CRON.tsInicio=Date.now();
+  clearInterval(cronInterval); cronInterval=setInterval(cronTick,500);
+  saveCron(); sincronizarCron(); salvarWipActual(); render();
+}
+function cronFinalPartido(){
+  acumular(); CRON.estado='fin';
+  clearInterval(cronInterval);
+  saveCron(); sincronizarCron(); salvarWipActual(); render();
+  playSound('snd-final');
 }
 function cronPausar(){
-  acumularSegParte();
-  CRON.run=false;
+  acumular();
+  CRON.estado=CRON.estado==='1run'?'1pause':'2pause';
   clearInterval(cronInterval);
-  saveCron();sincronizarCron();salvarWipActual();render();
+  saveCron(); sincronizarCron(); salvarWipActual(); render();
 }
-function cronSig2(){
-  acumularSegParte();
-  CRON.parte=2;CRON.segParte2=0;
+function cronReanudar(){
+  CRON.estado=CRON.estado==='1pause'?'1run':'2run';
   CRON.tsInicio=Date.now();
-  CRON.run=true;CRON.alerta=false;cronAlertado=false;
-  clearInterval(cronInterval);cronInterval=setInterval(cronTick,1000);
-  saveCron();sincronizarCron();salvarWipActual();render();
-}
-function cronFin(){
-  acumularSegParte();
-  CRON.run=false;CRON.fin=true;
-  clearInterval(cronInterval);
-  saveCron();sincronizarCron();salvarWipActual();render();
+  clearInterval(cronInterval); cronInterval=setInterval(cronTick,500);
+  saveCron(); sincronizarCron(); salvarWipActual(); render();
 }
 function cronReset(){
   clearInterval(cronInterval);
-  var dur=CRON.duracion;
-  CRON={duracion:dur,parte:1,segParte1:0,segParte2:0,tsInicio:null,run:false,fin:false,descuento1:0,descuento2:0,alerta:false};
-  cronAlertado=false;cronPartidoIniciado=false;
-  clearCronLS();sincronizarCron();
-}
-function cronDescuento(){
-  if(CRON.parte===1) CRON.descuento1++; else CRON.descuento2++;
-  cronAlertado=false;CRON.alerta=false;
-  saveCron();sincronizarCron();render();
+  var dur=CRON.duracion||15;
+  CRON={duracion:dur,estado:'idle',segAcum:0,tsInicio:null};
+  clearCronLS(); sincronizarCron(); render();
 }
 function sincronizarCron(){
   if(!WIP.partidoId||!db) return;
-  var segP1=CRON.segParte1,segP2=CRON.segParte2;
-  if(CRON.run&&CRON.tsInicio){
-    var e=(Date.now()-CRON.tsInicio)/1000;
-    if(CRON.parte===1) segP1+=e; else segP2+=e;
-  }
+  var segSnap=CRON.segAcum+(cronIsRunning()&&CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0);
   db.from('partidos').update({cron_estado:{
-    duracion:CRON.duracion,parte:CRON.parte,
-    segParte1:segP1,segParte2:segP2,
-    tsSync:Date.now(),run:CRON.run,fin:CRON.fin,
-    alerta:CRON.alerta,descuento1:CRON.descuento1,descuento2:CRON.descuento2
+    estado:CRON.estado, duracion:CRON.duracion,
+    segAcum:segSnap, tsSync:Date.now(),
+    run:cronIsRunning(), parte:CRON.estado[0]==='2'||CRON.estado==='fin'?2:1,
+    fin:CRON.estado==='fin'
   }}).eq('id',WIP.partidoId).then(function(){}).catch(function(){});
 }
 
@@ -1365,32 +1360,23 @@ function buildMarcador() {
   // Si es el mismo dispositivo del árbitro, usar CRON local; si no, usar cron_estado de DB
   var cronLocal = wipOk;
   var ce = cronLocal ? null : (ultimo.cron_estado || null);
-  var tsD, tpD, cronColor, cronStatusTxt;
+  var tsD, cronColor, cronStatusTxt;
   if(cronLocal){
-    tsD=Math.floor(calcSegTotal()); tpD=Math.floor(calcSegParte());
-    cronColor=CRON.alerta?'var(--carmin)':CRON.run?'var(--win)':'var(--mute)';
-    cronStatusTxt=CRON.fin?'⛔ FIN':CRON.alerta?'⚠️ Fin parte '+CRON.parte:CRON.run?'Parte '+CRON.parte+' · min '+Math.floor(tpD/60):'Pausado';
+    tsD = Math.floor(calcSegDisplay());
+    var ceL = CRON.estado;
+    cronColor = (ceL==='1run'||ceL==='2run')?'var(--win)':(ceL==='idle')?'var(--mute)':'var(--amber)';
+    cronStatusTxt = ceL==='idle'?'Sin iniciar':ceL==='1run'?'1ª parte':ceL==='1pause'?'Pausado · 1ª parte':ceL==='fin1'?'Descanso':ceL==='2run'?'2ª parte':ceL==='2pause'?'Pausado · 2ª parte':ceL==='fin'?'Partido finalizado':'';
   } else if(ce){
-    var segP1r=ce.segParte1||0,segP2r=ce.segParte2||0;
-    if(ce.run&&ce.tsSync){var er=(Date.now()-ce.tsSync)/1000;if(ce.parte===1)segP1r+=er;else segP2r+=er;}
-    var totalSegR=Math.floor(ce.parte===1?segP1r:segP1r+segP2r);
-    var parteSegR=Math.floor(ce.parte===1?segP1r:segP2r);
-    tsD=totalSegR; tpD=parteSegR;
-    cronColor=ce.alerta?'var(--carmin)':ce.run?'var(--win)':'var(--mute)';
-    cronStatusTxt=ce.fin?'⛔ FIN':ce.alerta?'⚠️ Fin parte '+ce.parte:ce.run?'Parte '+ce.parte+' · min '+Math.floor(parteSegR/60):'Pausado';
+    var segAcumR=ce.segAcum||0;
+    if(ce.run&&ce.tsSync) segAcumR+=(Date.now()-ce.tsSync)/1000;
+    var baseR=(ce.parte===2||ce.estado==='fin')?(ce.duracion||15)*60:0;
+    tsD=Math.floor(baseR+segAcumR);
+    cronColor=ce.run?'var(--win)':ce.fin?'var(--amber)':'var(--mute)';
+    cronStatusTxt=ce.fin?'Partido finalizado':ce.run?(ce.parte===2?'2ª parte':'1ª parte'):'Pausado';
   } else {
-    tsD=0; tpD=0; cronColor='var(--mute)'; cronStatusTxt='Sin datos';
+    tsD=0; cronColor='var(--mute)'; cronStatusTxt='Sin datos';
   }
-  var s=cronLocal?CRON:(ce||{});
   var cronBtns='';
-  if(cronLocal){
-    if(!s.run&&!s.fin) cronBtns+='<button class="btn btn-green" id="cron-iniciar">'+(cronPartidoIniciado?'▶ Reanudar':'▶ Iniciar')+'</button>';
-    if(s.run) cronBtns+='<button class="btn btn-yellow" id="cron-pausar">Pausar</button>';
-    if(cronPartidoIniciado&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">2.ª parte</button>';
-    if(s.alerta&&!s.fin) cronBtns+='<button class="btn btn-orange" id="cron-descuento">+1 min</button>';
-    if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">Fin</button>';
-    if(cronPartidoIniciado||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">Reset</button>';
-  }
   var bc='<div class="breadcrumb" style="display:flex;justify-content:space-between;align-items:center"><div><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div><button class="btn btn-ghost" id="btn-marcador-refresh" style="font-size:12px;padding:5px 10px">Actualizar</button></div>';
   var bannerActa = wipOk ? '<div style="background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="font-family:\'Inter\',sans-serif;font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em">&#11044; Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:10px;padding:6px 14px">Volver al acta</button></div>' : '';
   if(!ultimo) return bc+bannerActa+'<div style="text-align:center;padding:60px"><h2 class="h2">Marcador en directo</h2><p style="color:var(--mute);margin-top:8px">Aparecerá cuando empieces un acta.</p></div>';
@@ -1478,14 +1464,6 @@ function _recargarPartidosYActualizar(){
 }
 
 function attachMarcadorEvents(){
-  var ic=$('cron-iniciar'),pa=$('cron-pausar'),s2=$('cron-sig2'),fi=$('cron-fin'),cr=$('cron-reset');
-  if(ic) ic.addEventListener('click',cronIniciar);
-  if(pa) pa.addEventListener('click',cronPausar);
-  if(s2) s2.addEventListener('click',cronSig2);
-  if(fi) fi.addEventListener('click',cronFin);
-  if(cr) cr.addEventListener('click',cronReset);
-  var desc=$('cron-descuento'); if(desc) desc.addEventListener('click',cronDescuento);
-
   var br=$('btn-marcador-refresh');
   if(br) br.addEventListener('click',function(){ _recargarPartidosYActualizar(); });
 
@@ -1505,11 +1483,12 @@ function attachMarcadorEvents(){
     if(!el) return;
     if(wipOk){
       // Árbitro: usar CRON local
-      var tsD=Math.floor(calcSegTotal()),tpD=Math.floor(calcSegParte());
-      var col=CRON.alerta?'var(--carmin)':CRON.run?'var(--win)':'var(--mute)';
+      var segDisp=Math.floor(calcSegDisplay());
+      var ceL=CRON.estado;
+      var col=(ceL==='1run'||ceL==='2run')?'var(--win)':(ceL==='idle')?'var(--mute)':'var(--amber)';
       el.style.color=col;
-      el.textContent=pad(Math.floor(tsD/60))+':'+pad(tsD%60);
-      if(st) st.textContent=CRON.fin?'⛔ FIN':CRON.alerta?'⚠️ Fin parte '+CRON.parte:CRON.run?'Parte '+CRON.parte+' · min '+Math.floor(tpD/60):'Pausado';
+      el.textContent=pad(Math.floor(segDisp/60))+':'+pad(segDisp%60);
+      if(st){var stTxt=ceL==='idle'?'Sin iniciar':ceL==='1run'?'1ª parte':ceL==='1pause'?'Pausado · 1ª parte':ceL==='fin1'?'Descanso':ceL==='2run'?'2ª parte':ceL==='2pause'?'Pausado · 2ª parte':ceL==='fin'?'Partido finalizado':'';st.textContent=stTxt;}
     } else {
       // Espectador: usar cron_estado de DB
       var cronPs=DB.partidos.filter(function(x){return !x.completado&&x.cron_estado&&x.cron_estado.tsSync;});
@@ -1517,22 +1496,21 @@ function attachMarcadorEvents(){
       var p=cronPs[0]||null;
       if(!p||!p.cron_estado) return;
       var ce=p.cron_estado;
-      var segP1=ce.segParte1||0,segP2=ce.segParte2||0;
-      if(ce.run&&ce.tsSync){var er=(Date.now()-ce.tsSync)/1000;if(ce.parte===1)segP1+=er;else segP2+=er;}
-      var ts=Math.floor(ce.parte===1?segP1:segP1+segP2);
-      var tp=Math.floor(ce.parte===1?segP1:segP2);
-      var cronCol=ce.alerta?'var(--carmin)':ce.run?'var(--win)':'var(--mute)';
+      var segAcumR=ce.segAcum||0;
+      if(ce.run&&ce.tsSync) segAcumR+=(Date.now()-ce.tsSync)/1000;
+      var baseR=(ce.parte===2||ce.estado==='fin')?(ce.duracion||15)*60:0;
+      var ts=Math.floor(baseR+segAcumR);
+      var cronCol=ce.run?'var(--win)':ce.fin?'var(--amber)':'var(--mute)';
       el.style.color=cronCol;
       el.textContent=pad(Math.floor(ts/60))+':'+pad(ts%60);
-      if(st) st.textContent=ce.fin?'⛔ FIN':ce.alerta?'⚠️ Fin parte '+ce.parte:ce.run?'Parte '+ce.parte+' · min '+Math.floor(tp/60):'Pausado';
+      if(st) st.textContent=ce.fin?'Partido finalizado':ce.run?(ce.parte===2?'2ª parte':'1ª parte'):'Pausado';
     }
   },1000);
 }
 
 function sincronizarEnCurso(){
   if(!WIP.localId||!WIP.visitanteId) return;
-  var segP1=CRON.segParte1,segP2=CRON.segParte2;
-  if(CRON.run&&CRON.tsInicio){var ec=(Date.now()-CRON.tsInicio)/1000;if(CRON.parte===1)segP1+=ec;else segP2+=ec;}
+  var segSnap=CRON.segAcum+(cronIsRunning()&&CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0);
   var datos={local_id:WIP.localId,visitante_id:WIP.visitanteId,
     goles_local:(WIP.goles||[]).filter(function(g){return g.equipo==='local';}).length,
     goles_visitante:(WIP.goles||[]).filter(function(g){return g.equipo==='visitante';}).length,
@@ -1541,7 +1519,7 @@ function sincronizarEnCurso(){
     tiros_local:WIP.tirosL||0,tiros_visitante:WIP.tirosV||0,
     fecha:WIP.fecha,jornada:Number(WIP.jornada)||null,arbitro:WIP.arbitro||'',notas:WIP.notas||'',
     completado:false,liga_id:WIP.ligaId||null,torneo_id:WIP.torneoId||null,jornada_id:WIP.jornadaId||null,
-    cron_estado:{duracion:CRON.duracion,parte:CRON.parte,segParte1:segP1,segParte2:segP2,tsSync:Date.now(),run:CRON.run,fin:CRON.fin,alerta:CRON.alerta,descuento1:CRON.descuento1,descuento2:CRON.descuento2}};
+    cron_estado:{estado:CRON.estado,duracion:CRON.duracion,segAcum:segSnap,tsSync:Date.now(),run:cronIsRunning(),parte:CRON.estado[0]==='2'||CRON.estado==='fin'?2:1,fin:CRON.estado==='fin'}};
   if(WIP.partidoId){db.from('partidos').update(datos).eq('id',WIP.partidoId).then(function(){});}
   else{WIP.partidoId=uid();datos.id=WIP.partidoId;saveWip(WIP);db.from('partidos').insert(datos).then(function(){});}
 }
@@ -1564,19 +1542,42 @@ function buildActa() {
   var contexto = ligaId ? getLiga(ligaId) : (torneoId ? getTorneo(torneoId) : null);
   var nL = nEq(w.localId)||'Local', nV = nEq(w.visitanteId)||'Visitante';
   var optsEq = '<option value="local">'+nL+'</option><option value="visitante">'+nV+'</option>';
-  var s=CRON;
-  var ts=Math.floor(calcSegTotal());
-  var tp=Math.floor(calcSegParte());
-  var cronColor=s.alerta?'var(--carmin)':s.run?'var(--win)':'var(--mute)';
+  var seg=Math.floor(calcSegDisplay());
+  var cronColor=CRON.estado==='1run'||CRON.estado==='2run'?'var(--win)':CRON.estado==='idle'?'var(--mute)':CRON.estado==='fin'||CRON.estado==='fin1'?'var(--amber)':'var(--chalk-dim)';
   var cronBtns='';
-  if(!s.run&&!s.fin) cronBtns+='<button class="btn btn-green" id="cron-iniciar">'+(cronPartidoIniciado?'▶ Reanudar':'▶ Iniciar')+'</button>';
-  if(s.run) cronBtns+='<button class="btn btn-yellow" id="cron-pausar">⏸ Pausar</button>';
-  if(cronPartidoIniciado&&s.parte===1&&!s.fin) cronBtns+='<button class="btn btn-blue" id="cron-sig2">→ 2.ª parte</button>';
-  if(s.alerta&&!s.fin) cronBtns+='<button class="btn btn-orange" id="cron-descuento">+1 min</button>';
-  if(s.alerta&&s.parte===2&&!s.fin) cronBtns+='<button class="btn btn-red" id="cron-fin">🏁 Fin</button>';
-  if(cronPartidoIniciado||s.fin) cronBtns+='<button class="btn btn-ghost" id="cron-reset">↺ Reset</button>';
-  cronBtns+='<button class="btn btn-ghost" id="btn-pitido-final" style="font-size:18px;padding:6px 10px">📣</button>';
-  var cronStatusTxt=s.fin?'⛔ FIN del partido':s.alerta?'⚠️ Fin parte '+s.parte+(s.parte===1?' · desc '+s.descuento1+'min':' · desc '+s.descuento2+'min'):s.run?'Parte '+s.parte+' · min '+Math.floor(tp/60):(cronPartidoIniciado?'Parte '+s.parte+' · pausado':'Parte 1 · pausado');
+  var ce=CRON.estado;
+  if(ce==='idle'){
+    cronBtns='<button class="btn btn-green" id="cron-inicio-1" style="flex:1">▶ Inicio partido</button>';
+  } else if(ce==='1run'){
+    cronBtns='<button class="btn btn-red" id="cron-fin-1" style="flex:1">Final 1ª parte</button>'+
+              '<button class="btn btn-yellow" id="cron-pausar">Pausar</button>'+
+              '<button class="btn btn-ghost" id="cron-reset">Reiniciar</button>';
+  } else if(ce==='1pause'){
+    cronBtns='<button class="btn btn-red" id="cron-fin-1" style="flex:1">Final 1ª parte</button>'+
+              '<button class="btn btn-green" id="cron-reanudar">▶ Reanudar</button>'+
+              '<button class="btn btn-ghost" id="cron-reset">Reiniciar</button>';
+  } else if(ce==='fin1'){
+    cronBtns='<button class="btn btn-blue" id="cron-inicio-2" style="flex:1">▶ Inicio 2ª parte</button>'+
+              '<button class="btn btn-ghost" id="cron-reset">Reiniciar</button>';
+  } else if(ce==='2run'){
+    cronBtns='<button class="btn btn-red" id="cron-fin-2" style="flex:1">Final del partido</button>'+
+              '<button class="btn btn-yellow" id="cron-pausar">Pausar</button>'+
+              '<button class="btn btn-ghost" id="cron-reset">Reiniciar</button>';
+  } else if(ce==='2pause'){
+    cronBtns='<button class="btn btn-red" id="cron-fin-2" style="flex:1">Final del partido</button>'+
+              '<button class="btn btn-green" id="cron-reanudar">▶ Reanudar</button>'+
+              '<button class="btn btn-ghost" id="cron-reset">Reiniciar</button>';
+  } else if(ce==='fin'){
+    cronBtns='<button class="btn btn-ghost" id="cron-reset">Reiniciar</button>';
+  }
+  var cronStatusTxt='';
+  if(ce==='idle') cronStatusTxt='Sin iniciar';
+  else if(ce==='1run'){var em1=CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0;cronStatusTxt='1ª parte · Minuto '+Math.floor((CRON.segAcum+em1)/60);}
+  else if(ce==='1pause') cronStatusTxt='Pausado · 1ª parte';
+  else if(ce==='fin1') cronStatusTxt='Descanso';
+  else if(ce==='2run'){var em2=CRON.tsInicio?(Date.now()-CRON.tsInicio)/1000:0;var m2=Math.floor((CRON.segAcum+em2)/60);cronStatusTxt='2ª parte'+(m2>0?' · Minuto '+m2:'');}
+  else if(ce==='2pause'){var m2p=Math.floor(CRON.segAcum/60);cronStatusTxt='Pausado · 2ª parte'+(m2p>0?' · Minuto '+m2p:'');}
+  else if(ce==='fin') cronStatusTxt='Partido finalizado';
 
   function evRowActa(items,color,tipo){
     return (items||[]).map(function(it){
@@ -1658,11 +1659,11 @@ function buildActa() {
     '<p class="section-title" style="margin-bottom:0;color:var(--amber)">Cronómetro</p>' +
     '<div style="display:flex;align-items:center;gap:6px">' +
     '<span style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute)">Duración parte:</span>' +
-    '<input type="number" id="cron-duracion" value="'+s.duracion+'" min="5" max="45" class="inp" style="width:52px;text-align:center;padding:4px 6px;font-size:13px;background:#1a1a1a;border-color:#333"/>' +
+    '<input type="number" id="cron-duracion" value="'+CRON.duracion+'" min="5" max="45" class="inp" style="width:52px;text-align:center;padding:4px 6px;font-size:13px;background:#1a1a1a;border-color:#333"/>' +
     '<span style="font-family:\'Inter\',sans-serif;font-size:9px;color:var(--mute)">min</span>' +
     '</div></div>' +
     '<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">' +
-    '<div><div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(Math.floor(ts/60))+':'+pad(ts%60)+'</div>' +
+    '<div><div id="crono-display" class="crono-display" style="color:'+cronColor+'">'+pad(Math.floor(seg/60))+':'+pad(seg%60)+'</div>' +
     '<div id="crono-status" style="font-family:\'Inter\',sans-serif;font-size:10px;color:var(--mute);margin-top:3px;letter-spacing:0.1em;text-transform:uppercase">'+cronStatusTxt+'</div></div>' +
     '<div style="display:flex;flex-direction:column;gap:7px;flex:1">' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">'+cronBtns+'</div>' +
@@ -2418,8 +2419,6 @@ function attachModalEquipoEvents(){
 }
 
 // ── SONIDOS ───────────────────────────────────────────────────────
-var cronPartidoIniciado = false;
-
 function playSound(id) {
   var el = document.getElementById(id);
   if(!el) return;
