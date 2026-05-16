@@ -794,7 +794,8 @@ function buildModalPartido() {
       var eqBadge = it.equipo ? '<span class="badge" style="background:rgba('+(it.equipo==='local'?'125,209,129':'255,176,32')+',0.15);color:'+(it.equipo==='local'?'var(--win)':'var(--amber)')+'">'+(it.equipo==='local'?nL:nV)+'</span>' : '';
       var tBadge = it.tarjeta ? '<span class="badge" style="background:rgba('+(it.tarjeta==='roja'?'214,51,75':'207,199,182')+',0.15);color:'+(it.tarjeta==='roja'?'var(--carmin)':'var(--chalk-dim)')+'">'+(it.tarjeta==='roja'?'Roja':'Amarilla')+'</span>' : '';
       var mBadge = it.motivo ? '<span class="badge" style="background:rgba(214,51,75,0.15);color:var(--carmin)">'+it.motivo+'</span>' : '';
-      return '<div class="evento-row"><span style="color:rgb('+color+');font-weight:700;min-width:32px">'+pad(it.minuto)+"'</span><span style='font-weight:600;flex:1'>"+txt+'</span>'+eqBadge+tBadge+mBadge+(ed?'<button class="btn btn-ghost del-evento" data-tipo="'+tipo+'" data-id="'+it.id+'" style="padding:3px 8px;font-size:13px;margin-left:auto">X</button>':'')+'</div>';
+      var minTxt = it.minuto!=null && it.minuto!=='' ? pad(it.minuto)+"'" : '—';
+      return '<div class="evento-row"><span style="color:rgb('+color+');font-weight:700;min-width:32px">'+minTxt+'</span><span style="font-weight:600;flex:1">'+txt+'</span>'+eqBadge+tBadge+mBadge+(ed?'<button class="btn btn-ghost del-evento" data-tipo="'+tipo+'" data-id="'+it.id+'" style="padding:3px 8px;font-size:13px;margin-left:auto">X</button>':'')+'</div>';
     }).join('');
   }
 
@@ -1582,7 +1583,8 @@ function buildActa() {
       var txt = it.autor||it.jugador||(it.sale?it.sale+' / '+it.entra:'')||'';
       var extra = it.tarjeta?'<span class="badge" style="background:rgba('+(it.tarjeta==='roja'?'214,51,75':'207,199,182')+',0.15);color:'+(it.tarjeta==='roja'?'var(--carmin)':'var(--chalk-dim)')+'">'+(it.tarjeta==='roja'?'🟥':'🟨')+'</span>':'';
       extra += it.motivo?'<span class="badge" style="background:rgba(214,51,75,0.15);color:var(--carmin)">'+it.motivo+'</span>':'';
-      return '<div class="evento-row"><span style="color:rgb('+color+');font-weight:700;min-width:30px">'+pad(it.minuto)+"'</span>" +
+      var minTxt2 = it.minuto!=null && it.minuto!=='' ? pad(it.minuto)+"'" : '—';
+      return '<div class="evento-row"><span style="color:rgb('+color+');font-weight:700;min-width:30px">'+minTxt2+'</span>' +
         '<span style="font-weight:600;flex:1">'+txt+'</span>'+extra+
         '<button class="btn btn-ghost del-wip" data-tipo="'+tipo+'" data-id="'+it.id+'" style="padding:3px 8px;font-size:13px;margin-left:auto">✕</button></div>';
     }).join('');
