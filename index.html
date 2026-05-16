@@ -1360,16 +1360,10 @@ function buildMarcador() {
       goles:wip.goles||[],fecha:wip.fecha,jornada:wip.jornada||'?',liga_id:wip.ligaId,
       fueras_local:wip.fuerasL||0,fueras_visitante:wip.fuerasV||0};
   } else {
-    // Priorizar el partido con cron_estado activo más reciente (tsSync más alto)
+    // Espectador: solo mostrar si hay un partido activo con cron_estado sincronizado
     var conCron=DB.partidos.filter(function(p){return !p.completado&&p.cron_estado&&p.cron_estado.tsSync;});
     conCron.sort(function(a,b){return (b.cron_estado.tsSync||0)-(a.cron_estado.tsSync||0);});
-    if(conCron.length){ultimo=conCron[0];}
-    else{
-      var hoy=new Date().toISOString().slice(0,10);var enC=DB.partidos.filter(function(p){return !p.completado&&p.local_id&&p.visitante_id&&p.jornada_id&&(p.fecha===hoy||((p.goles||[]).length+(p.faltas||[]).length)>0);});
-      enC.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});
-      if(enC.length){ultimo=enC[0];}
-      else{var comp=DB.partidos.filter(function(p){return p.completado;});comp.sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);});ultimo=comp[0]||null;}
-    }
+    ultimo=conCron.length?conCron[0]:null;
   }
   // Si es el mismo dispositivo del árbitro, usar CRON local; si no, usar cron_estado de DB
   var cronLocal = wipOk;
@@ -1392,8 +1386,9 @@ function buildMarcador() {
   }
   var cronBtns='';
   var bc='<div class="breadcrumb"><span class="breadcrumb-link" id="bc-home">Inicio</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Marcador</span></div>';
+  var sinPartido=bc+'<div style="text-align:center;padding:60px 20px"><h2 class="h2" style="color:var(--mute)">Sin partido en juego</h2><p style="color:var(--chalk-dim);margin-top:12px;font-size:13px">El marcador solo funciona cuando hay un acta abierta.</p></div>';
   var bannerActa = wipOk ? '<div style="background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px"><span style="font-family:\'Inter\',sans-serif;font-size:11px;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em">&#11044; Acta en curso</span><button class="btn btn-gold" onclick="volverAlActa()" style="font-size:10px;padding:6px 14px">Volver al acta</button></div>' : '';
-  if(!wipOk) return bc+'<div style="text-align:center;padding:60px 20px"><h2 class="h2" style="color:var(--mute)">Sin partido en juego</h2><p style="color:var(--chalk-dim);margin-top:12px;font-size:13px">El marcador solo funciona cuando hay un acta abierta.</p></div>';
+  if(!ultimo) return sinPartido;
   var nL=nEq(ultimo.local_id),nV=nEq(ultimo.visitante_id),liga=ultimo.liga_id?getLiga(ultimo.liga_id):null;
   var goles=(ultimo.goles||[]).slice().sort(function(a,b){return +a.minuto-+b.minuto;});
   var golesHtml='';
