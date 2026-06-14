@@ -122,10 +122,14 @@ select option{background:var(--felt)}
   .tabla-clas th{padding:6px 4px!important;font-size:10px!important;letter-spacing:0!important}
   .tabla-clas td{padding:6px 4px!important;font-size:12px!important}
   .tabla-clas{min-width:unset!important}
+  .grid2{grid-template-columns:1fr!important}
   .clavados-grid{grid-template-columns:1fr!important}
   .marcador-score-grid{gap:8px!important}
   .marcador-score-num{font-size:44px!important;letter-spacing:4px!important}
   .marcador-eq-name{font-size:15px!important}
+  .banda-cell{width:18px!important;height:18px!important;font-size:9px!important}
+  .banda-row{gap:2px!important}
+  .card{padding:12px!important}
 }
 @media (min-width:760px){
   #app{max-width:900px!important}
@@ -2469,6 +2473,15 @@ function cargarAudios(gol, inicio, final_) {
   if(i) i.src = inicio;
   if(f) f.src = final_;
 }
+
+// ── KEEPALIVE ─────────────────────────────────────────────────────
+// Ping ligero para mantener activo el proyecto Supabase (plan gratuito)
+function supabaseKeepalive(){
+  if(!CONFIGURED) return;
+  fetch(SB_URL+'/rest/v1/ligas?select=id&limit=1',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}).catch(function(){});
+}
+supabaseKeepalive();
+setInterval(supabaseKeepalive, 24*60*60*1000); // cada 24h si la app sigue abierta
 
 // ── INIT ──────────────────────────────────────────────────────────
 if(CONFIGURED){
