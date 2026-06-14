@@ -1038,6 +1038,182 @@ function attachModalNuevoTorneoEvents(){
   });
 }
 
+// ── MODALES RÁPIDOS GOL / FAUTS ───────────────────────────────────
+function _detectarEqJugador(nombre, localId, visitanteId) {
+  if (!nombre) return null;
+  var low = nombre.toLowerCase();
+  var j = DB.plantilla.find(function(p) {
+    return (p.equipo_id === localId || p.equipo_id === visitanteId) && p.nombre.toLowerCase() === low;
+  });
+  if (!j) return null;
+  return j.equipo_id === localId ? 'local' : 'visitante';
+}
+
+function _inyectarModal(html) {
+  var wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap.firstChild);
+}
+
+function abrirModalGol() {
+  var w = WIP;
+  var localId = w.localId, visitanteId = w.visitanteId;
+  var nL = nEq(localId)||'Local', nV = nEq(visitanteId)||'Visitante';
+  var min0 = Math.max(1, Math.ceil(calcSegDisplay() / 60));
+  var optsEq = '<option value="local">'+nL+'</option><option value="visitante">'+nV+'</option>';
+  var pickHtml = playerPickHTML('mgol-jug', localId, visitanteId);
+
+  _inyectarModal(
+    '<div class="modal-overlay" id="mgol-ov" style="display:flex;align-items:flex-start;justify-content:center">' +
+    '<div class="modal-box" style="margin-top:60px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+    '<p class="h3" style="color:var(--win)">Gol</p>' +
+    '<button class="btn btn-ghost" id="mgol-x" style="padding:4px 10px">✕</button></div>' +
+    '<label class="label">Minuto</label>' +
+    '<input type="number" id="mgol-min" class="inp" value="'+min0+'" min="1" style="margin-bottom:14px"/>' +
+    '<label class="label">Goleador</label>' +
+    pickHtml +
+    '<div id="mgol-eq-auto" style="display:none;margin-top:14px">' +
+    '<label class="label">Equipo</label>' +
+    '<div id="mgol-eq-badge" style="background:rgba(125,209,129,0.15);border:1px solid rgba(125,209,129,0.4);padding:8px 12px;font-size:13px;color:var(--win);margin-top:5px"></div>' +
+    '</div>' +
+    '<div id="mgol-eq-sel" style="margin-top:14px">' +
+    '<label class="label">Equipo</label><select id="mgol-eq" class="sel">'+optsEq+'</select></div>' +
+    '<label class="label" style="margin-top:14px;display:block">Tipo</label>' +
+    '<select id="mgol-tipo" class="sel" style="margin-bottom:18px"><option value="normal">Normal</option><option value="falta">De falta</option><option value="autopista">En propia</option></select>' +
+    '<div style="display:flex;gap:10px">' +
+    '<button class="btn btn-ghost" id="mgol-cancel" style="flex:1">Cancelar</button>' +
+    '<button class="btn btn-green" id="mgol-ok" style="flex:2">✓ Guardar gol</button>' +
+    '</div></div></div>'
+  );
+
+  var _eqAuto = null;
+  function actualizarEqUI(nombre) {
+    var eq = _detectarEqJugador(nombre, localId, visitanteId);
+    var badge = document.getElementById('mgol-eq-badge');
+    var autoDiv = document.getElementById('mgol-eq-auto');
+    var selDiv = document.getElementById('mgol-eq-sel');
+    if (eq) {
+      _eqAuto = eq;
+      badge.textContent = eq === 'local' ? nL : nV;
+      autoDiv.style.display = 'block';
+      selDiv.style.display = 'none';
+    } else {
+      _eqAuto = null;
+      autoDiv.style.display = 'none';
+      selDiv.style.display = 'block';
+    }
+  }
+
+  var pick = document.getElementById('mgol-jug-pick');
+  var inp = document.getElementById('mgol-jug');
+  if (pick) pick.addEventListener('change', function() {
+    onPlayerPick('mgol-jug-pick', 'mgol-jug');
+    actualizarEqUI(this.value === '__OTRO__' ? '' : this.value);
+  });
+  if (inp) inp.addEventListener('input', function() { actualizarEqUI(this.value); });
+
+  function cerrar() { var ov=document.getElementById('mgol-ov'); if(ov) ov.parentNode.removeChild(ov); }
+  function obtenerJugador() {
+    var p = document.getElementById('mgol-jug-pick');
+    var i = document.getElementById('mgol-jug');
+    if (p && p.value && p.value !== '__OTRO__') return p.value;
+    return i ? i.value : '';
+  }
+
+  document.getElementById('mgol-x').addEventListener('click', cerrar);
+  document.getElementById('mgol-cancel').addEventListener('click', cerrar);
+  document.getElementById('mgol-ov').addEventListener('click', function(e){ if(e.target===this) cerrar(); });
+  document.getElementById('mgol-ok').addEventListener('click', function() {
+    var min = document.getElementById('mgol-min').value;
+    var autor = obtenerJugador();
+    var eq = _eqAuto || (document.getElementById('mgol-eq') ? document.getElementById('mgol-eq').value : 'local');
+    var tipo = document.getElementById('mgol-tipo').value;
+    if (!autor) { alert('Introduce el goleador'); return; }
+    WIP.goles = (WIP.goles||[]).concat([{id:uid(),minuto:min,autor:autor,equipo:eq,tipo:tipo}]);
+    saveWip(WIP); sincronizarEnCurso(); playSound('snd-gol'); cerrar(); render();
+  });
+}
+
+function abrirModalFauts() {
+  var w = WIP;
+  var localId = w.localId, visitanteId = w.visitanteId;
+  var nL = nEq(localId)||'Local', nV = nEq(visitanteId)||'Visitante';
+  var min0 = Math.max(1, Math.ceil(calcSegDisplay() / 60));
+  var optsEq = '<option value="local">'+nL+'</option><option value="visitante">'+nV+'</option>';
+  var pickHtml = playerPickHTML('mfalt-jug', localId, visitanteId);
+
+  _inyectarModal(
+    '<div class="modal-overlay" id="mfalt-ov" style="display:flex;align-items:flex-start;justify-content:center">' +
+    '<div class="modal-box" style="margin-top:60px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+    '<p class="h3" style="color:var(--amber)">Fauts</p>' +
+    '<button class="btn btn-ghost" id="mfalt-x" style="padding:4px 10px">✕</button></div>' +
+    '<label class="label">Minuto</label>' +
+    '<input type="number" id="mfalt-min" class="inp" value="'+min0+'" min="1" style="margin-bottom:14px"/>' +
+    '<label class="label">Jugador</label>' +
+    pickHtml +
+    '<div id="mfalt-eq-auto" style="display:none;margin-top:14px">' +
+    '<label class="label">Equipo</label>' +
+    '<div id="mfalt-eq-badge" style="background:rgba(255,176,32,0.15);border:1px solid rgba(255,176,32,0.4);padding:8px 12px;font-size:13px;color:var(--amber);margin-top:5px"></div>' +
+    '</div>' +
+    '<div id="mfalt-eq-sel" style="margin-top:14px;margin-bottom:18px">' +
+    '<label class="label">Equipo</label><select id="mfalt-eq" class="sel">'+optsEq+'</select></div>' +
+    '<div style="display:flex;gap:10px">' +
+    '<button class="btn btn-ghost" id="mfalt-cancel" style="flex:1">Cancelar</button>' +
+    '<button class="btn btn-yellow" id="mfalt-ok" style="flex:2">✓ Guardar faut</button>' +
+    '</div></div></div>'
+  );
+
+  var _eqAuto = null;
+  function actualizarEqUI(nombre) {
+    var eq = _detectarEqJugador(nombre, localId, visitanteId);
+    var badge = document.getElementById('mfalt-eq-badge');
+    var autoDiv = document.getElementById('mfalt-eq-auto');
+    var selDiv = document.getElementById('mfalt-eq-sel');
+    if (eq) {
+      _eqAuto = eq;
+      badge.textContent = eq === 'local' ? nL : nV;
+      autoDiv.style.display = 'block';
+      selDiv.style.display = 'none';
+    } else {
+      _eqAuto = null;
+      autoDiv.style.display = 'none';
+      selDiv.style.display = 'block';
+    }
+  }
+
+  var pick = document.getElementById('mfalt-jug-pick');
+  var inp = document.getElementById('mfalt-jug');
+  if (pick) pick.addEventListener('change', function() {
+    onPlayerPick('mfalt-jug-pick', 'mfalt-jug');
+    actualizarEqUI(this.value === '__OTRO__' ? '' : this.value);
+  });
+  if (inp) inp.addEventListener('input', function() { actualizarEqUI(this.value); });
+
+  function cerrar() { var ov=document.getElementById('mfalt-ov'); if(ov) ov.parentNode.removeChild(ov); }
+  function obtenerJugador() {
+    var p = document.getElementById('mfalt-jug-pick');
+    var i = document.getElementById('mfalt-jug');
+    if (p && p.value && p.value !== '__OTRO__') return p.value;
+    return i ? i.value : '';
+  }
+
+  document.getElementById('mfalt-x').addEventListener('click', cerrar);
+  document.getElementById('mfalt-cancel').addEventListener('click', cerrar);
+  document.getElementById('mfalt-ov').addEventListener('click', function(e){ if(e.target===this) cerrar(); });
+  document.getElementById('mfalt-ok').addEventListener('click', function() {
+    var min = document.getElementById('mfalt-min').value;
+    var jug = obtenerJugador();
+    var eq = _eqAuto || (document.getElementById('mfalt-eq') ? document.getElementById('mfalt-eq').value : 'local');
+    if (!jug) { alert('Introduce el jugador'); return; }
+    var t = (WIP.faltas||[]).filter(function(f){return f.jugador===jug&&f.equipo===eq;}).length===0?'amarilla':'roja';
+    WIP.faltas = (WIP.faltas||[]).concat([{id:uid(),minuto:min,jugador:jug,equipo:eq,tarjeta:t}]);
+    if (t==='roja') alert('🟥 Doble faut de '+jug+' — registra la expulsión');
+    saveWip(WIP); sincronizarEnCurso(); cerrar(); render();
+  });
+}
+
 // ── ACTA EVENTS ───────────────────────────────────────────────────
 function attachActaEvents(){
   var ci1=$('cron-inicio-1'),cf1=$('cron-fin-1'),ci2=$('cron-inicio-2'),cf2=$('cron-fin-2');
@@ -1079,21 +1255,9 @@ function attachActaEvents(){
   bindCounter('fV-dec','fV-inc','fV-val','fuerasV');
 
   var ag=$('btn-add-gol-wip');
-  if(ag) ag.addEventListener('click',function(){
-    var min=$('w-gol-min').value,autor=$('w-gol-autor').value,eq=$('w-gol-eq').value,tipo=$('w-gol-tipo').value;
-    if(!min||!autor) return;
-    WIP.goles=(WIP.goles||[]).concat([{id:uid(),minuto:min,autor:autor,equipo:eq,tipo:tipo}]);
-    saveWip(WIP); sincronizarEnCurso(); playSound('snd-gol'); render();
-  });
+  if(ag) ag.addEventListener('click', abrirModalGol);
   var af=$('btn-add-falt-wip');
-  if(af) af.addEventListener('click',function(){
-    var min=$('w-falt-min').value,jug=$('w-falt-jug').value,eq=$('w-falt-eq').value;
-    if(!min||!jug) return;
-    var t=(WIP.faltas||[]).filter(function(f){return f.jugador===jug&&f.equipo===eq;}).length===0?'amarilla':'roja';
-    WIP.faltas=(WIP.faltas||[]).concat([{id:uid(),minuto:min,jugador:jug,equipo:eq,tarjeta:t}]);
-    if(t==='roja') alert('🟥 Doble falta de '+jug+' - registra la expulsión');
-    saveWip(WIP); sincronizarEnCurso(); render();
-  });
+  if(af) af.addEventListener('click', abrirModalFauts);
   var ax=$('btn-add-exp-wip');
   if(ax) ax.addEventListener('click',function(){
     var jug=$('w-exp-jug').value,eq=$('w-exp-eq').value,mot=$('w-exp-mot').value;
@@ -1729,19 +1893,12 @@ function buildActa() {
     '<span style="font-family:\'Anton\',sans-serif;font-size:18px;text-transform:uppercase">'+nL+'</span>' +
     '<div style="background:var(--ink);padding:5px 16px;font-family:\'Inter\',sans-serif;font-size:26px;color:var(--amber);font-weight:700;letter-spacing:4px;text-shadow:0 0 10px rgba(255,176,32,0.5);font-variant-numeric:tabular-nums">'+( w.goles||[]).filter(function(g){return g.equipo==='local';}).length+' – '+(w.goles||[]).filter(function(g){return g.equipo==='visitante';}).length+'</div>' +
     '<span style="font-family:\'Anton\',sans-serif;font-size:18px;text-transform:uppercase">'+nV+'</span></div>' +
-    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-gol-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Goleador</label>'+playerPickHTML('w-gol-autor',w.localId,w.visitanteId)+'</div></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
-    '<div><label class="label">Equipo</label><select id="w-gol-eq" class="sel">'+optsEq+'</select></div>' +
-    '<div><label class="label">Tipo</label><select id="w-gol-tipo" class="sel"><option value="normal">Normal</option><option value="falta">De falta</option><option value="autopista">En propia</option></select></div>' +
-    '<button class="btn btn-green" id="btn-add-gol-wip" style="font-size:10px">+ Gol</button></div>' +
+    '<button class="btn btn-green" id="btn-add-gol-wip" style="width:100%;margin-bottom:12px">+ Gol</button>' +
     evRowActa(w.goles,'125,209,129','goles')+'</div>' +
 
     // Faltas
     '<div class="card"><p class="section-title">Fauts</p>' +
-    '<div class="grid2" style="margin-bottom:8px"><div><label class="label">Minuto</label><input type="number" id="w-falt-min" min="1" placeholder="Min" class="inp"/></div><div><label class="label">Jugador</label>'+playerPickHTML('w-falt-jug',w.localId,w.visitanteId)+'</div></div>' +
-    '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px;align-items:end">' +
-    '<div><label class="label">Equipo</label><select id="w-falt-eq" class="sel">'+optsEq+'</select></div>' +
-    '<button class="btn btn-yellow" id="btn-add-falt-wip" style="font-size:10px">+ Falt</button></div>' +
+    '<button class="btn btn-yellow" id="btn-add-falt-wip" style="width:100%;margin-bottom:12px">+ Faut</button>' +
     evRowActa(w.faltas,'207,199,182','faltas')+'</div>' +
 
     // Expulsiones
