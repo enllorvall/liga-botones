@@ -73,6 +73,9 @@ select option{background:var(--felt)}
 .btn-orange{background:#e07820;color:var(--chalk)}
 .inp{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:2px;padding:9px 12px;color:var(--chalk);font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100%;min-width:0}
 .inp:focus{border-color:rgba(245,240,230,0.5)}
+input[type="date"]{-webkit-appearance:none;appearance:none;display:block;width:100%!important;min-width:0!important}
+input[type="date"]::-webkit-date-and-time-value{width:100%;text-align:left}
+input[type="date"]::-webkit-datetime-edit{display:flex;flex:1 1 auto;min-width:0}
 .sel{background:var(--felt-hi);border:1px solid rgba(245,240,230,0.15);border-radius:2px;padding:9px 12px;color:var(--chalk);font-size:13px;font-family:'Inter',sans-serif;outline:none;width:100%}
 .label{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:0.16em;display:block;margin-bottom:5px}
 .section-title{font-family:'Inter',sans-serif;font-size:9px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:0.16em;margin-bottom:12px}
@@ -147,7 +150,7 @@ select option{background:var(--felt)}
 </style>
 </head>
 <body>
-<div id="app" style="max-width:900px;margin:0 auto;padding:14px 12px 60px"></div>
+<div id="app" style="max-width:900px;margin:0 auto;padding:14px 12px 60px;overflow-x:hidden"></div>
 <div id="pdf-area"></div>
 <script>
 // ── EQUIPO VISUAL KIT ─────────────────────────────────────────────
@@ -1657,9 +1660,9 @@ function buildActa() {
 
     // Datos del partido
     '<div class="card"><p class="section-title">Datos del partido</p>' +
-    '<div class="grid2" style="margin-bottom:12px">' +
-    '<div><label class="label">Jornada</label><input type="number" id="w-jornada" value="'+(w.jornada||'')+'" min="1" placeholder="N°" class="inp"/></div>' +
-    '<div><label class="label">Fecha</label><input type="date" id="w-fecha" value="'+(w.fecha||today())+'" class="inp"/></div>' +
+    '<div style="display:grid;grid-template-columns:minmax(0,90px) minmax(0,1fr);gap:12px;margin-bottom:12px">' +
+    '<div style="min-width:0"><label class="label">Jornada</label><input type="number" id="w-jornada" value="'+(w.jornada||'')+'" min="1" placeholder="N°" class="inp"/></div>' +
+    '<div style="min-width:0;overflow:hidden"><label class="label">Fecha</label><input type="date" id="w-fecha" value="'+(w.fecha||today())+'" class="inp"/></div>' +
     '</div>' +
     '<div><label class="label">Árbitro</label><input type="text" id="w-árbitro" value="'+(w.árbitro||'')+'" placeholder="Nombre del árbitro" class="inp" style="margin-bottom:12px"/></div>' +
     (w.localId&&w.visitanteId?
