@@ -7,7 +7,8 @@
 <meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Liga de Botones</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -323,10 +324,93 @@ function buttonSVG(nombre, size) {
 }
 
 'use strict';
-var SB_URL = "https://iifxqedvwvxetntpjjjd.supabase.co";
-var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZnhxZWR2d3Z4ZXRudHBqampkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Mzk0MjEsImV4cCI6MjA5MzQxNTQyMX0.ex8n_fjO3LruVO6NgGYHie-OjStlW-uZK6-Urj25aM0";
-var CONFIGURED = SB_URL.indexOf("PEGA_AQUI") === -1;
-var db = CONFIGURED ? supabase.createClient(SB_URL, SB_KEY) : null;
+var firebaseConfig = {
+  apiKey: "AIzaSyC4DgRkCbvSUHbyW2Dcp0pL7W2W3m5QNGE",
+  authDomain: "liga-botones.firebaseapp.com",
+  databaseURL: "https://liga-botones-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "liga-botones",
+  storageBucket: "liga-botones.firebasestorage.app",
+  messagingSenderId: "244236000527",
+  appId: "1:244236000527:web:011f9114284581502fb27a"
+};
+var CONFIGURED = true;
+firebase.initializeApp(firebaseConfig);
+var rtdb = firebase.database();
+
+function _fbSanitize(obj){
+  if(obj===undefined) return null;
+  if(obj===null || typeof obj!=='object') return obj;
+  if(Array.isArray(obj)) return obj.map(_fbSanitize);
+  var out={};
+  Object.keys(obj).forEach(function(k){ out[k]=_fbSanitize(obj[k]); });
+  return out;
+}
+
+function _fbTable(table){
+  var tref = rtdb.ref(table);
+  return {
+    select: function(){
+      return { order: function(field){
+        return tref.once('value').then(function(snap){
+          var val = snap.val()||{};
+          var arr = Object.keys(val).map(function(k){ return val[k]; });
+          arr.sort(function(a,b){
+            var av=a?a[field]:undefined, bv=b?b[field]:undefined;
+            if(av===bv) return 0;
+            if(av===undefined||av===null) return -1;
+            if(bv===undefined||bv===null) return 1;
+            return av>bv?1:(av<bv?-1:0);
+          });
+          return {data:arr, error:null};
+        }).catch(function(err){ return {data:null, error:err}; });
+      }};
+    },
+    insert: function(obj){
+      var row = _fbSanitize(obj);
+      if(row.created_at===undefined||row.created_at===null) row.created_at = Date.now();
+      return tref.child(row.id).set(row)
+        .then(function(){ return {data:[row], error:null}; })
+        .catch(function(err){ return {data:null, error:err}; });
+    },
+    update: function(patch){
+      var clean = _fbSanitize(patch);
+      return { eq: function(field, value){
+        var work;
+        if(field==='id'){
+          work = tref.child(value).update(clean);
+        } else {
+          work = tref.orderByChild(field).equalTo(value).once('value').then(function(snap){
+            var updates={};
+            snap.forEach(function(child){
+              Object.keys(clean).forEach(function(k){ updates[child.key+'/'+k]=clean[k]; });
+            });
+            return tref.update(updates);
+          });
+        }
+        return work.then(function(){ return {data:null, error:null}; })
+          .catch(function(err){ return {data:null, error:err}; });
+      }};
+    },
+    delete: function(){
+      return { eq: function(field, value){
+        var work;
+        if(field==='id'){
+          work = tref.child(value).remove();
+        } else {
+          work = tref.orderByChild(field).equalTo(value).once('value').then(function(snap){
+            var updates={};
+            snap.forEach(function(child){ updates[child.key]=null; });
+            return tref.update(updates);
+          });
+        }
+        return work.then(function(){ return {data:null, error:null}; })
+          .catch(function(err){ return {data:null, error:err}; });
+      }};
+    }
+  };
+}
+
+var db = CONFIGURED ? { from: _fbTable } : null;
 var WIP_KEY = "lb_wip";
 
 // ── SEGURIDAD PIN ─────────────────────────────────────────────────
@@ -2790,27 +2874,24 @@ function cargarAudios(gol, inicio, final_) {
 
 // ── KEEPALIVE ─────────────────────────────────────────────────────
 // Ping ligero para mantener activo el proyecto Supabase (plan gratuito)
-function supabaseKeepalive(){
-  if(!CONFIGURED) return;
-  fetch(SB_URL+'/rest/v1/ligas?select=id&limit=1',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}).catch(function(){});
-}
-supabaseKeepalive();
-setInterval(supabaseKeepalive, 24*60*60*1000); // cada 24h si la app sigue abierta
-
 // ── INIT ──────────────────────────────────────────────────────────
 if(CONFIGURED){
   cargar().then(render);
-  // Realtime
-  db.channel('lb')
-    .on('postgres_changes',{event:'*',schema:'public',table:'jugadores'},function(){if(VIEW.screen!=='acta'){cargar().then(render);}})
-    .on('postgres_changes',{event:'*',schema:'public',table:'plantilla'},function(){if(VIEW.screen!=='acta'){cargar().then(render);}})
-    .on('postgres_changes',{event:'*',schema:'public',table:'ligas'},function(){if(VIEW.screen!=='acta'){cargar().then(render);}})
-    .on('postgres_changes',{event:'*',schema:'public',table:'torneos'},function(){if(VIEW.screen!=='acta'){cargar().then(render);}})
-    .on('postgres_changes',{event:'*',schema:'public',table:'partidos'},function(){
-      if(VIEW.screen==='marcador'){_recargarPartidosYActualizar();}
-      else if(VIEW.screen!=='acta'){cargar().then(render);}
-    })
-    .subscribe();
+  // Realtime (Firebase: 'value' dispara también con el snapshot inicial, lo ignoramos)
+  function _fbWatch(table, cb){
+    var first=true;
+    rtdb.ref(table).on('value', function(){
+      if(first){ first=false; return; }
+      cb();
+    });
+  }
+  ['jugadores','plantilla','ligas','torneos'].forEach(function(t){
+    _fbWatch(t, function(){ if(VIEW.screen!=='acta'){ cargar().then(render); } });
+  });
+  _fbWatch('partidos', function(){
+    if(VIEW.screen==='marcador'){ _recargarPartidosYActualizar(); }
+    else if(VIEW.screen!=='acta'){ cargar().then(render); }
+  });
 } else {
   render();
 }
